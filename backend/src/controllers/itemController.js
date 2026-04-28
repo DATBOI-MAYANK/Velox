@@ -1,4 +1,9 @@
+const mongoose = require("mongoose");
 const Item = require("../models/Item");
+
+const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+const invalidIdResponse = (res) =>
+  res.status(400).json({ success: false, message: "Invalid item ID" });
 
 // GET /api/items
 const getItems = async (req, res) => {
@@ -12,6 +17,7 @@ const getItems = async (req, res) => {
 
 // GET /api/items/:id
 const getItemById = async (req, res) => {
+  if (!isValidId(req.params.id)) return invalidIdResponse(res);
   try {
     const item = await Item.findById(req.params.id);
     if (!item) {
@@ -26,7 +32,8 @@ const getItemById = async (req, res) => {
 // POST /api/items
 const createItem = async (req, res) => {
   try {
-    const item = await Item.create(req.body);
+    const { name, description, price } = req.body;
+    const item = await Item.create({ name, description, price });
     res.status(201).json({ success: true, data: item });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -35,6 +42,7 @@ const createItem = async (req, res) => {
 
 // PUT /api/items/:id
 const updateItem = async (req, res) => {
+  if (!isValidId(req.params.id)) return invalidIdResponse(res);
   try {
     // Destructure only the fields we allow to be updated (prevents NoSQL injection)
     const { name, description, price } = req.body;
@@ -58,6 +66,7 @@ const updateItem = async (req, res) => {
 
 // DELETE /api/items/:id
 const deleteItem = async (req, res) => {
+  if (!isValidId(req.params.id)) return invalidIdResponse(res);
   try {
     const item = await Item.findByIdAndDelete(req.params.id);
     if (!item) {
@@ -70,3 +79,4 @@ const deleteItem = async (req, res) => {
 };
 
 module.exports = { getItems, getItemById, createItem, updateItem, deleteItem };
+
