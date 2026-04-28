@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const Item = require("../models/Item");
 
 const isValidId = (id) => mongoose.Types.ObjectId.isValid(id);
+const toObjectId = (id) => new mongoose.Types.ObjectId(id);
 const invalidIdResponse = (res) =>
   res.status(400).json({ success: false, message: "Invalid item ID" });
 
@@ -19,7 +20,7 @@ const getItems = async (req, res) => {
 const getItemById = async (req, res) => {
   if (!isValidId(req.params.id)) return invalidIdResponse(res);
   try {
-    const item = await Item.findById(req.params.id);
+    const item = await Item.findById(toObjectId(req.params.id));
     if (!item) {
       return res.status(404).json({ success: false, message: "Item not found" });
     }
@@ -51,7 +52,7 @@ const updateItem = async (req, res) => {
     if (description !== undefined) updateData.description = description;
     if (price !== undefined) updateData.price = price;
 
-    const item = await Item.findByIdAndUpdate(req.params.id, updateData, {
+    const item = await Item.findByIdAndUpdate(toObjectId(req.params.id), updateData, {
       new: true,
       runValidators: true,
     });
@@ -68,7 +69,7 @@ const updateItem = async (req, res) => {
 const deleteItem = async (req, res) => {
   if (!isValidId(req.params.id)) return invalidIdResponse(res);
   try {
-    const item = await Item.findByIdAndDelete(req.params.id);
+    const item = await Item.findByIdAndDelete(toObjectId(req.params.id));
     if (!item) {
       return res.status(404).json({ success: false, message: "Item not found" });
     }
