@@ -3,7 +3,7 @@ import ItemCard from "../components/ItemCard";
 import ItemForm from "../components/ItemForm";
 
 const Home = () => {
-  const { items, loading, error, addItem, editItem, removeItem } = useItems();
+  const { items, loading, error, mutationError, addItem, editItem, removeItem } = useItems();
 
   return (
     <main className="page">
@@ -16,6 +16,7 @@ const Home = () => {
         <h2>Items ({items.length})</h2>
         {loading && <p className="status">Loading…</p>}
         {error && <p className="status error">Error: {error}</p>}
+        {mutationError && <p className="status error">Error: {mutationError}</p>}
         {!loading && !error && items.length === 0 && (
           <p className="status">No items yet. Add one above!</p>
         )}

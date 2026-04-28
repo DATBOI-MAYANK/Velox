@@ -5,6 +5,7 @@ export const useItems = () => {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [mutationError, setMutationError] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -24,19 +25,38 @@ export const useItems = () => {
   }, [load]);
 
   const addItem = async (item) => {
-    const res = await createItem(item);
-    setItems((prev) => [res.data, ...prev]);
+    setMutationError(null);
+    try {
+      const res = await createItem(item);
+      setItems((prev) => [res.data, ...prev]);
+    } catch (err) {
+      setMutationError(err.message);
+      throw err;
+    }
   };
 
   const editItem = async (id, item) => {
-    const res = await updateItem(id, item);
-    setItems((prev) => prev.map((i) => (i._id === id ? res.data : i)));
+    setMutationError(null);
+    try {
+      const res = await updateItem(id, item);
+      setItems((prev) => prev.map((i) => (i._id === id ? res.data : i)));
+    } catch (err) {
+      setMutationError(err.message);
+      throw err;
+    }
   };
 
   const removeItem = async (id) => {
-    await deleteItem(id);
-    setItems((prev) => prev.filter((i) => i._id !== id));
+    setMutationError(null);
+    try {
+      await deleteItem(id);
+      setItems((prev) => prev.filter((i) => i._id !== id));
+    } catch (err) {
+      setMutationError(err.message);
+      throw err;
+    }
   };
 
-  return { items, loading, error, addItem, editItem, removeItem, reload: load };
+  return { items, loading, error, mutationError, addItem, editItem, removeItem, reload: load };
 };
+

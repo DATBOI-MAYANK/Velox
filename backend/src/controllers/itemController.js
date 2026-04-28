@@ -36,7 +36,14 @@ const createItem = async (req, res) => {
 // PUT /api/items/:id
 const updateItem = async (req, res) => {
   try {
-    const item = await Item.findByIdAndUpdate(req.params.id, req.body, {
+    // Destructure only the fields we allow to be updated (prevents NoSQL injection)
+    const { name, description, price } = req.body;
+    const updateData = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (price !== undefined) updateData.price = price;
+
+    const item = await Item.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });
