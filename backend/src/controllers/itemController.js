@@ -34,7 +34,11 @@ const getItemById = async (req, res) => {
 const createItem = async (req, res) => {
   try {
     const { name, description, price } = req.body;
-    const item = await Item.create({ name, description, price });
+    const item = await Item.create({
+      name: String(name ?? "").trim(),
+      description: String(description ?? "").trim(),
+      price: Number(price),
+    });
     res.status(201).json({ success: true, data: item });
   } catch (error) {
     res.status(400).json({ success: false, message: error.message });
@@ -45,12 +49,12 @@ const createItem = async (req, res) => {
 const updateItem = async (req, res) => {
   if (!isValidId(req.params.id)) return invalidIdResponse(res);
   try {
-    // Destructure only the fields we allow to be updated (prevents NoSQL injection)
+    // Explicitly coerce each field to its primitive type to prevent operator-injection
     const { name, description, price } = req.body;
     const updateData = {};
-    if (name !== undefined) updateData.name = name;
-    if (description !== undefined) updateData.description = description;
-    if (price !== undefined) updateData.price = price;
+    if (name !== undefined) updateData.name = String(name).trim();
+    if (description !== undefined) updateData.description = String(description).trim();
+    if (price !== undefined) updateData.price = Number(price);
 
     const item = await Item.findByIdAndUpdate(toObjectId(req.params.id), updateData, {
       new: true,
