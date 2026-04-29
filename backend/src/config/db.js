@@ -1,5 +1,5 @@
-require("dotenv").config();
-const mongoose = require("mongoose");
+import "dotenv/config";
+import mongoose from "mongoose";
 
 const MAX_RETRIES = 5;
 const INITIAL_DELAY = 1000;
@@ -31,4 +31,4 @@ async function ConnectDB(retryCount = 0) {
   }
 }
 
-module.exports = { ConnectDB };
+export default ConnectDB;
