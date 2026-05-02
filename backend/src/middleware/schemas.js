@@ -92,6 +92,32 @@ export const updateFAQSchema = z.object({
   isActive: z.boolean().optional(),
 }).refine((d) => Object.values(d).some((v) => v !== undefined), { message: "Provide at least one field" });
 
+// --- Admin KB Articles ---
+export const createKBSchema = z.object({
+  title: shortStr,
+  content: longStr,
+  category: shortStr.optional(),
+  status: z.enum(["Draft", "Published", "Archived"]).optional(),
+  tags: z.array(shortStr).optional(),
+});
+
+export const updateKBSchema = z.object({
+  title: shortStr.optional(),
+  content: longStr.optional(),
+  category: shortStr.optional(),
+  status: z.enum(["Draft", "Published", "Archived"]).optional(),
+  tags: z.array(shortStr).optional(),
+  usedCount: z.number().int().min(0).optional(),
+}).refine((d) => Object.values(d).some((v) => v !== undefined), { message: "Provide at least one field" });
+
+// --- Admin Reports ---
+export const createReportSchema = z.object({
+  name: shortStr,
+  type: z.enum(["Performance", "Satisfaction", "Knowledge Base", "Customer", "SLA", "Export"]),
+  desc: shortStr.optional(),
+  frequency: z.enum(["One-time", "Daily", "Weekly", "Monthly"]).optional(),
+});
+
 // --- Admin Settings ---
 export const aiSettingsSchema = z.object({
   enabled: z.boolean().optional(),
@@ -120,13 +146,11 @@ export const widgetSessionSchema = z.object({
   customerEmail: email.optional(),
 });
 
-// Public endpoint used by the embeddable chat widget to create a ticket from
-// a customer's message. Auth is via apiKey, not JWT.
 export const widgetTicketSchema = z.object({
   apiKey: z.string().min(1),
-  content: longStr,
+  content: longStr.optional(),
   customerName: shortStr.optional(),
   customerEmail: email.optional(),
   subject: shortStr.optional(),
-  transcript: z.string().max(20000).optional(),
+  transcript: z.array(z.any()).optional(),
 });

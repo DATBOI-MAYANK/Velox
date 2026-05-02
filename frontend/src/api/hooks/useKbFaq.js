@@ -31,6 +31,22 @@ export function useCreateKbArticle() {
   });
 }
 
+export function useUpdateKbArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }) => kb.update(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.kb.all }),
+  });
+}
+
+export function useRemoveKbArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => kb.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.kb.all }),
+  });
+}
+
 /* -------- FAQ -------- */
 export const useFaq = (params) =>
   useQuery({

@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import AppShell from "@layouts/AppShell.jsx";
+import { useAnalyticsOverview, useTicketsTrend, useAgentPerformance } from "@api/hooks/useAnalytics";
+import { useTickets } from "@api/hooks/useTickets";
 import {
   Activity,
   AlertTriangle,
@@ -14,72 +16,135 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-/* ----------------------------- mock data ----------------------------- */
-const KPIS = [
-  { key: "total",    label: "Total Tickets",       value: "12,458", delta: "18.2%", up: true,  icon: Inbox,        tone: "#F1ECFF", iconColor: "#7C5CFF" },
-  { key: "open",     label: "Open Tickets",        value: "2,345",  delta: "12.5%", up: true,  icon: Ticket,       tone: "#FFF5DC", iconColor: "#C28A00" },
-  { key: "resolved", label: "Resolved Tickets",    value: "9,842",  delta: "20.4%", up: true,  icon: Smile,        tone: "#E9F5E0", iconColor: "#3FA02A" },
-  { key: "resp",     label: "Avg. Response Time",  value: "2h 34m", delta: "8.7%",  up: false, icon: Activity,     tone: "#FCE7F3", iconColor: "#D63384" },
-  { key: "csat",     label: "Customer Satisfaction", value: "4.6 / 5", delta: "6.3%", up: true, icon: Smile,       tone: "#E9F5E0", iconColor: "#3FA02A" },
-];
-
-const TIME_SERIES = [
-  { x: "May 14", y: 1.6 },
-  { x: "May 15", y: 1.9 },
-  { x: "May 16", y: 2.6 },
-  { x: "May 17", y: 2.2 },
-  { x: "May 18", y: 2.7 },
-  { x: "May 19", y: 3.0 },
-  { x: "May 20", y: 3.5 },
-];
-
-const STATUS_DATA = [
-  { key: "Open",        value: 2345, pct: 18.8, color: "#3FA02A" },
-  { key: "Pending",     value: 1245, pct: 10.0, color: "#C28A00" },
-  { key: "In Progress", value: 3456, pct: 27.7, color: "#7C5CFF" },
-  { key: "Resolved",    value: 9842, pct: 78.9, color: "#D63384" },
-];
-
-const CHANNELS = [
-  { key: "Web Chat",     value: 5642, pct: 45.3, color: "#7C5CFF" },
-  { key: "Email",        value: 3245, pct: 26.0, color: "#3FA02A" },
-  { key: "Phone",        value: 2345, pct: 18.8, color: "#C28A00" },
-  { key: "Social Media", value: 1226, pct:  9.8, color: "#D63384" },
-];
+/* ----------------------------- constants & tones ----------------------------- */
 
 const STATUS_TONES = {
   Open:          { bg: "#E9F5E0", color: "#3FA02A" },
   Pending:       { bg: "#FFF5DC", color: "#C28A00" },
   "In Progress": { bg: "#F1ECFF", color: "#7C5CFF" },
   Resolved:      { bg: "#FCE7F3", color: "#D63384" },
+  Closed:        { bg: "#EDEDEA", color: "#5B5B57" },
 };
 
 const PRIORITY_TONES = {
-  High:   { bg: "#FCE7F3", color: "#D63384" },
-  Medium: { bg: "#FFF5DC", color: "#C28A00" },
-  Low:    { bg: "#E9F5E0", color: "#3FA02A" },
+  high:   { bg: "#FCE7F3", color: "#D63384" },
+  medium: { bg: "#FFF5DC", color: "#C28A00" },
+  low:    { bg: "#E9F5E0", color: "#3FA02A" },
 };
 
-const TICKETS = [
-  { id: "TK-2505", customer: "John Doe",      initials: "JD", subject: "Order status inquiry",  status: "Open",        priority: "Medium", agent: "Alex Johnson",  agentInitials: "AJ", agentTone: "#E9F5E0", updated: "2m ago"  },
-  { id: "TK-2504", customer: "Sarah Smith",   initials: "SS", subject: "Refund not received",   status: "Pending",     priority: "High",   agent: "Maria Garcia",  agentInitials: "MG", agentTone: "#F1ECFF", updated: "15m ago" },
-  { id: "TK-2503", customer: "Mike Johnson",  initials: "MJ", subject: "Unable to login",       status: "In Progress", priority: "Medium", agent: "David Brown",   agentInitials: "DB", agentTone: "#FFF5DC", updated: "32m ago" },
-  { id: "TK-2502", customer: "Emma Williams", initials: "EW", subject: "Product not working",   status: "Open",        priority: "Low",    agent: "Alex Johnson",  agentInitials: "AJ", agentTone: "#E9F5E0", updated: "1h ago"  },
-  { id: "TK-2501", customer: "David Brown",   initials: "DB", subject: "Payment method issue",  status: "Resolved",    priority: "High",   agent: "Maria Garcia",  agentInitials: "MG", agentTone: "#F1ECFF", updated: "2h ago"  },
-];
-
-const TOP_AGENTS = [
-  { name: "Alex Johnson",  initials: "AJ", tone: "#E9F5E0", color: "#3FA02A", resolved: 128, pct: 92 },
-  { name: "Maria Garcia",  initials: "MG", tone: "#F1ECFF", color: "#7C5CFF", resolved:  96, pct: 88 },
-  { name: "David Brown",   initials: "DB", tone: "#FFF5DC", color: "#C28A00", resolved:  76, pct: 85 },
-  { name: "James Wilson",  initials: "JW", tone: "#FCE7F3", color: "#D63384", resolved:  64, pct: 80 },
-  { name: "Sophia Lee",    initials: "SL", tone: "#E9F5E0", color: "#3FA02A", resolved:  52, pct: 78 },
+const DEFAULT_KPIS = [
+  { key: "total",    label: "Total Tickets",       value: "0", delta: "", up: true,  icon: Inbox,        tone: "#F1ECFF", iconColor: "#7C5CFF" },
+  { key: "open",     label: "Open Tickets",        value: "0", delta: "", up: true,  icon: Ticket,       tone: "#FFF5DC", iconColor: "#C28A00" },
+  { key: "resolved", label: "Resolved Tickets",    value: "0", delta: "", up: true,  icon: Smile,        tone: "#E9F5E0", iconColor: "#3FA02A" },
+  { key: "resp",     label: "Avg. Resolution Time",value: "0m", delta: "", up: false, icon: Activity,    tone: "#FCE7F3", iconColor: "#D63384" },
+  { key: "csat",     label: "Customer Satisfaction", value: "N/A", delta: "", up: true, icon: Smile,     tone: "#E9F5E0", iconColor: "#3FA02A" },
 ];
 
 /* ============================== page ============================== */
 export default function AdminPanel() {
   const [chartRange, setChartRange] = useState("Daily");
   const [agentRange, setAgentRange] = useState("This Week");
+
+  // Fetch live data
+  const { data: overviewData, isLoading: overviewLoading, isError: overviewError } = useAnalyticsOverview();
+  const { data: trendsData, isLoading: trendsLoading, isError: trendsError } = useTicketsTrend();
+  const { data: agentsData, isLoading: agentsLoading, isError: agentsError } = useAgentPerformance();
+  const { data: ticketsData, isLoading: ticketsLoading, isError: ticketsError } = useTickets({ limit: 5 });
+
+  const isLoading = overviewLoading || trendsLoading || agentsLoading || ticketsLoading;
+  const isError = overviewError || trendsError || agentsError || ticketsError;
+
+  const overview = overviewData || {};
+
+  const liveKpis = useMemo(() => {
+    if (!overviewData) return DEFAULT_KPIS;
+    const fmt = (n) => (typeof n === "number" ? n.toLocaleString() : n ?? "0");
+    return [
+      { ...DEFAULT_KPIS[0], value: fmt(overview.total) },
+      { ...DEFAULT_KPIS[1], value: fmt(overview.open) },
+      { ...DEFAULT_KPIS[2], value: fmt(overview.resolved) },
+      { ...DEFAULT_KPIS[3], value: overview.avgResolutionFormatted || "0m" },
+      { ...DEFAULT_KPIS[4], value: overview.csat !== "N/A" ? `${overview.csat} / 5` : "N/A" },
+    ];
+  }, [overviewData]);
+
+  const liveTimeSeries = useMemo(() => {
+    const list = trendsData?.trends || [];
+    if (!list.length) return [{ x: "No Data", y: 0 }];
+    return list.slice(-7).map((t) => ({
+      x: new Date(t.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      y: t.count,
+    }));
+  }, [trendsData]);
+
+  const liveStatusData = useMemo(() => {
+    if (!overviewData) return [];
+    const total = overview.total || 1; // avoid /0
+    return [
+      { key: "Open", value: overview.open || 0, pct: Math.round(((overview.open || 0) / total) * 100), color: "#3FA02A" },
+      { key: "Resolved", value: overview.resolved || 0, pct: Math.round(((overview.resolved || 0) / total) * 100), color: "#D63384" },
+      { key: "Closed", value: overview.closed || 0, pct: Math.round(((overview.closed || 0) / total) * 100), color: "#7C5CFF" },
+    ].filter((d) => d.value > 0);
+  }, [overviewData]);
+
+  const liveTickets = useMemo(() => {
+    const list = ticketsData?.tickets || [];
+    return list.map((t) => {
+      const initial = t.customer?.name?.[0]?.toUpperCase() || "U";
+      const agentInit = t.assignedTo?.name?.split(" ").map((n) => n[0]).join("") || "--";
+      const statusCapitalized = t.status ? t.status.charAt(0).toUpperCase() + t.status.slice(1) : "Open";
+      return {
+        id: t._id.slice(-4).toUpperCase(), // Using last 4 chars as short ID
+        customer: t.customer?.name || "Unknown",
+        initials: initial,
+        subject: t.subject || "No subject",
+        status: statusCapitalized,
+        priority: t.priority || "medium",
+        agent: t.assignedTo?.name || "Unassigned",
+        agentInitials: agentInit,
+        agentTone: "#E9F5E0",
+        updated: new Date(t.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+    });
+  }, [ticketsData]);
+
+  const liveTopAgents = useMemo(() => {
+    const list = agentsData?.agents || [];
+    return list.slice(0, 5).map((a) => {
+      const initial = (a.name || a.email || "??").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+      const pct = a.total > 0 ? Math.round((a.resolved / a.total) * 100) : 0;
+      return {
+        name: a.name || a.email,
+        initials: initial,
+        tone: "#F1ECFF",
+        color: "#7C5CFF",
+        resolved: a.resolved || 0,
+        pct,
+      };
+    });
+  }, [agentsData]);
+
+  if (isLoading) {
+    return (
+      <AppShell active="dashboard" title="Dashboard" subtitle="Overview of your support system">
+        <div className="flex h-[400px] items-center justify-center text-[13px] font-semibold text-black/50">
+          <Activity className="mr-2 animate-pulse" size={16} />
+          Loading dashboard data...
+        </div>
+      </AppShell>
+    );
+  }
+
+  if (isError) {
+    return (
+      <AppShell active="dashboard" title="Dashboard" subtitle="Overview of your support system">
+        <div className="flex h-[400px] items-center justify-center text-[13px] font-semibold text-[#D63384]">
+          <AlertTriangle className="mr-2" size={16} />
+          Failed to load dashboard data. Please refresh.
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell
@@ -90,7 +155,7 @@ export default function AdminPanel() {
         <>
           <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[12px] font-semibold ring-1 ring-black/15">
             <Calendar size={13} strokeWidth={2.5} className="text-black/55" />
-            May 14 – May 20, 2025
+            Live Data
             <ChevronDown size={12} strokeWidth={2.5} className="text-black/50" />
           </button>
           <button className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[12px] font-bold ring-1 ring-black/15 transition-transform hover:-translate-y-0.5">
@@ -102,24 +167,20 @@ export default function AdminPanel() {
     >
       {/* KPI grid */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {KPIS.map((k) => (
+        {liveKpis.map((k) => (
           <KpiCard key={k.key} {...k} />
         ))}
       </div>
 
       {/* charts row */}
       <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader title="Tickets Over Time" right={<RangePill value={chartRange} onChange={setChartRange} options={["Daily", "Weekly", "Monthly"]} />} />
-          <LineChart data={TIME_SERIES} />
+          <LineChart data={liveTimeSeries} />
         </Card>
         <Card>
           <CardHeader title="Tickets by Status" />
-          <DonutChart data={STATUS_DATA} total={12458} />
-        </Card>
-        <Card>
-          <CardHeader title="Tickets by Channel" />
-          <BarsChart data={CHANNELS} />
+          <DonutChart data={liveStatusData.length ? liveStatusData : [{ key: "No Data", value: 1, pct: 100, color: "#e5e7eb" }]} total={overview.total || 0} />
         </Card>
       </div>
 
@@ -142,14 +203,17 @@ export default function AdminPanel() {
                 </tr>
               </thead>
               <tbody>
-                {TICKETS.map((t) => (
+                {liveTickets.length === 0 && (
+                  <tr><td colSpan="8" className="py-4 text-center text-black/50">No tickets found</td></tr>
+                )}
+                {liveTickets.map((t) => (
                   <tr key={t.id} className="border-t border-black/5 align-middle">
                     <Td className="font-bold text-black/70">#{t.id}</Td>
                     <Td>
                       <span className="inline-flex items-center gap-2">
                         <span
                           className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold"
-                          style={{ background: STATUS_TONES[t.status].bg, color: STATUS_TONES[t.status].color }}
+                          style={{ background: STATUS_TONES[t.status]?.bg || "#e5e7eb", color: STATUS_TONES[t.status]?.color || "#000" }}
                         >
                           {t.initials}
                         </span>
@@ -157,8 +221,8 @@ export default function AdminPanel() {
                       </span>
                     </Td>
                     <Td className="font-medium text-black/70">{t.subject}</Td>
-                    <Td><Pill tone={STATUS_TONES[t.status]}>{t.status}</Pill></Td>
-                    <Td><Pill tone={PRIORITY_TONES[t.priority]}>{t.priority}</Pill></Td>
+                    <Td><Pill tone={STATUS_TONES[t.status] || STATUS_TONES.Open}>{t.status}</Pill></Td>
+                    <Td><Pill tone={PRIORITY_TONES[t.priority] || PRIORITY_TONES.medium}>{t.priority}</Pill></Td>
                     <Td>
                       <span className="inline-flex items-center gap-2">
                         <span className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-bold" style={{ background: t.agentTone }}>
@@ -184,7 +248,8 @@ export default function AdminPanel() {
           <Card>
             <CardHeader title="Top Performing Agents" right={<RangePill value={agentRange} onChange={setAgentRange} options={["This Week", "This Month", "All Time"]} />} />
             <ul className="space-y-3">
-              {TOP_AGENTS.map((a, i) => (
+              {liveTopAgents.length === 0 && <li className="text-[12px] text-black/50">No agent data</li>}
+              {liveTopAgents.map((a, i) => (
                 <li key={a.name} className="flex items-center gap-3">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#FAFAF6] text-[11px] font-bold text-black/65">{i + 1}</span>
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[11px] font-bold" style={{ background: a.tone, color: a.color }}>{a.initials}</span>
@@ -205,18 +270,31 @@ export default function AdminPanel() {
 
           <Card>
             <CardHeader title="System Alerts" right={<TextLink>View All</TextLink>} />
-            <div className="flex items-start gap-3 rounded-[18px] bg-[#FFF5DC] p-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#C28A00]">
-                <AlertTriangle size={14} strokeWidth={2.5} />
-              </span>
-              <div className="min-w-0 flex-1 leading-tight">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-[12px] font-semibold">High response time detected</span>
-                  <span className="shrink-0 text-[10px] font-semibold text-black/50">10m ago</span>
+            {overview.csat && overview.csat < 4 ? (
+              <div className="flex items-start gap-3 rounded-[18px] bg-[#FCE7F3] p-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#D63384]">
+                  <AlertTriangle size={14} strokeWidth={2.5} />
+                </span>
+                <div className="min-w-0 flex-1 leading-tight">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[12px] font-semibold">CSAT Dropping</span>
+                  </div>
+                  <div className="mt-1 text-[11px] font-medium text-black/65">Average satisfaction is below 4.0.</div>
                 </div>
-                <div className="mt-1 text-[11px] font-medium text-black/65">Average response time is higher than usual.</div>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-start gap-3 rounded-[18px] bg-[#E9F5E0] p-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#3FA02A]">
+                  <Activity size={14} strokeWidth={2.5} />
+                </span>
+                <div className="min-w-0 flex-1 leading-tight">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[12px] font-semibold">System Stable</span>
+                  </div>
+                  <div className="mt-1 text-[11px] font-medium text-black/65">All systems operating normally.</div>
+                </div>
+              </div>
+            )}
           </Card>
         </div>
       </div>

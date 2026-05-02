@@ -1,18 +1,25 @@
 /**
- * Reports module is NOT implemented on the backend yet.
- * The backend exposes raw analytics under /analytics/* (see analytics.service.js)
- * but has no notion of saved/scheduled reports.
+ * Reports module - Now implemented on the backend.
+ * Backend: admin.routes.js → report.controller.js
  *
- * These stubs return empty/safe data so the Reports page doesn't crash.
- * Backend dev: implement /reports/* and replace these stubs with real http calls.
+ *   GET    /admin/reports
+ *   POST   /admin/reports
+ *   DELETE /admin/reports/:id
+ *
+ * Re-exports from report.service.js for backward compatibility.
+ * The reportService namespace is the primary import for hooks.
  */
-const notImpl = (extra = {}) => ({ notImplemented: true, ...extra });
+import { http } from "./_http";
 
 export const reports = {
-  list: async () => notImpl({ reports: [] }),
-  get: async () => notImpl({ report: null }),
-  create: async () => notImpl({ report: null }),
-  remove: async () => notImpl({ success: false }),
-  export: async () => notImpl({ url: null }),
-  schedule: async () => notImpl({ success: false }),
+  list: () => http.get("/admin/reports"),
+  get: async (id) => {
+    const res = await http.get("/admin/reports");
+    const items = res?.reports || [];
+    return items.find?.((r) => r._id === id || r.id === id) || null;
+  },
+  create: (body) => http.post("/admin/reports", body),
+  remove: (id) => http.del(`/admin/reports/${id}`),
+  export: async (id) => http.get(`/admin/reports/${id}/export`),
+  schedule: async (id, frequency) => http.post(`/admin/reports/${id}/schedule`, { frequency }),
 };

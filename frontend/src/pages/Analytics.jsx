@@ -4,6 +4,7 @@ import {
   useAnalyticsOverview,
   useTicketsTrend,
   useAgentPerformance,
+  useCategories
 } from "@api/hooks/useAnalytics";
 import {
   Activity,
@@ -24,63 +25,14 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-/* ----------------------------- mock data ----------------------------- */
-const KPIS = [
-  { key: "total",    label: "Total Tickets",         value: "12,458", delta: "18.2%", up: true,  hint: "from last 7 days", icon: Inbox,    tone: "#F1ECFF", iconColor: "#7C5CFF" },
-  { key: "open",     label: "Open Tickets",          value: "2,345",  delta: "12.5%", up: true,  hint: "from last 7 days", icon: Ticket,   tone: "#FFF5DC", iconColor: "#C28A00" },
-  { key: "resolved", label: "Resolved Tickets",      value: "9,842",  delta: "20.4%", up: true,  hint: "from last 7 days", icon: Smile,    tone: "#E9F5E0", iconColor: "#3FA02A" },
-  { key: "resp",     label: "Avg. Response Time",    value: "2h 34m", delta: "8.7%",  up: false, hint: "from last 7 days", icon: Clock,    tone: "#FCE7F3", iconColor: "#D63384" },
-  { key: "csat",     label: "Customer Satisfaction", value: "4.6 / 5", delta: "6.3%", up: true,  hint: "from last 7 days", icon: Activity, tone: "#E9F5E0", iconColor: "#3FA02A" },
+/* ----------------------------- constants ----------------------------- */
+const DEFAULT_KPIS = [
+  { key: "total",    label: "Total Tickets",         value: "0", delta: "", up: true,  hint: "from selected range", icon: Inbox,    tone: "#F1ECFF", iconColor: "#7C5CFF" },
+  { key: "open",     label: "Open Tickets",          value: "0", delta: "", up: true,  hint: "from selected range", icon: Ticket,   tone: "#FFF5DC", iconColor: "#C28A00" },
+  { key: "resolved", label: "Resolved Tickets",      value: "0", delta: "", up: true,  hint: "from selected range", icon: Smile,    tone: "#E9F5E0", iconColor: "#3FA02A" },
+  { key: "resp",     label: "Avg. Resolution Time",  value: "0m", delta: "", up: false, hint: "from selected range", icon: Clock,    tone: "#FCE7F3", iconColor: "#D63384" },
+  { key: "csat",     label: "Customer Satisfaction", value: "N/A", delta: "", up: true,  hint: "from selected range", icon: Activity, tone: "#E9F5E0", iconColor: "#3FA02A" },
 ];
-
-const TIME_SERIES = [
-  { x: "May 14", y: 1.0 },
-  { x: "May 15", y: 1.4 },
-  { x: "May 16", y: 2.2 },
-  { x: "May 17", y: 1.9 },
-  { x: "May 18", y: 2.4 },
-  { x: "May 19", y: 3.0 },
-  { x: "May 20", y: 3.6 },
-];
-
-const STATUS_DATA = [
-  { key: "Open",        value: 2345, pct: 18.8, color: "#3FA02A" },
-  { key: "Pending",     value: 1245, pct: 10.0, color: "#C28A00" },
-  { key: "In Progress", value: 3456, pct: 27.7, color: "#7C5CFF" },
-  { key: "Resolved",    value: 9842, pct: 78.9, color: "#D63384" },
-];
-
-const CHANNELS = [
-  { key: "Web Chat",     value: 5642, pct: 45.3, color: "#7C5CFF" },
-  { key: "Email",        value: 3245, pct: 26.0, color: "#3FA02A" },
-  { key: "Phone",        value: 2345, pct: 18.8, color: "#C28A00" },
-  { key: "Social Media", value: 1226, pct:  9.8, color: "#D63384" },
-];
-
-const PERF_SERIES = {
-  labels: ["May 14", "May 15", "May 16", "May 17", "May 18", "May 19", "May 20"],
-  lines: [
-    { key: "Response Time (hrs)",      color: "#7C5CFF", dash: "0",   data: [3.0, 2.8, 2.6, 2.7, 2.5, 2.6, 2.5] },
-    { key: "Resolution Time (hrs)",    color: "#3FA02A", dash: "6 4", data: [3.6, 3.4, 3.2, 3.3, 3.1, 3.0, 3.2] },
-    { key: "Customer Satisfaction",    color: "#C28A00", dash: "2 4", data: [4.2, 4.4, 4.5, 4.6, 4.5, 4.6, 4.7] },
-  ],
-};
-
-const TOP_ISSUES = [
-  { issue: "Order Status",     tickets: 2345, pct: 18.8 },
-  { issue: "Refund & Returns", tickets: 1876, pct: 15.0 },
-  { issue: "Login Issues",     tickets: 1234, pct:  9.9 },
-  { issue: "Payment Problems", tickets: 1023, pct:  8.2 },
-  { issue: "Product Questions",tickets:  987, pct:  7.9 },
-];
-
-const AGENT_PERF = [
-  { name: "Alex Johnson", initials: "AJ", tone: "#E9F5E0", color: "#3FA02A", resolved: 128, avgResp: "1h 45m", csat: "4.8 / 5" },
-  { name: "Maria Garcia", initials: "MG", tone: "#F1ECFF", color: "#7C5CFF", resolved:  96, avgResp: "2h 10m", csat: "4.6 / 5" },
-  { name: "David Brown",  initials: "DB", tone: "#FFF5DC", color: "#C28A00", resolved:  76, avgResp: "2h 25m", csat: "4.5 / 5" },
-];
-
-const SLA = { met: 10602, breached: 1856 };
 
 const FRT_BUCKETS = [
   { label: "< 30m",   pct: 38 },
@@ -96,22 +48,23 @@ export default function Analytics() {
   const { data: overview } = useAnalyticsOverview();
   const { data: trends } = useTicketsTrend();
   const { data: agentsData } = useAgentPerformance();
+  const { data: categoriesData } = useCategories();
 
   const liveKpis = useMemo(() => {
-    if (!overview) return KPIS;
-    const fmt = (n) => (typeof n === "number" ? n.toLocaleString() : n ?? "—");
+    if (!overview) return DEFAULT_KPIS;
+    const fmt = (n) => (typeof n === "number" ? n.toLocaleString() : n ?? "-");
     return [
-      { ...KPIS[0], value: fmt(overview.total),    delta: "" },
-      { ...KPIS[1], value: fmt(overview.open),     delta: "" },
-      { ...KPIS[2], value: fmt(overview.resolved), delta: "" },
-      { ...KPIS[3], value: overview.avgResolutionFormatted || "—", delta: "" },
-      { ...KPIS[4], value: overview.aiResolutionRate != null ? `${overview.aiResolutionRate}%` : "—", label: "AI Resolution Rate", delta: "" },
+      { ...DEFAULT_KPIS[0], value: fmt(overview.total) },
+      { ...DEFAULT_KPIS[1], value: fmt(overview.open) },
+      { ...DEFAULT_KPIS[2], value: fmt(overview.resolved) },
+      { ...DEFAULT_KPIS[3], value: overview.avgResolutionFormatted || "-" },
+      { ...DEFAULT_KPIS[4], value: overview.csat !== "N/A" ? `${overview.csat} / 5` : "N/A" },
     ];
   }, [overview]);
 
   const liveTimeSeries = useMemo(() => {
     const list = trends?.trends || [];
-    if (!list.length) return TIME_SERIES;
+    if (!list.length) return [{ x: "No Data", y: 0 }];
     return list.slice(-14).map((t) => ({
       x: new Date(t.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
       y: t.count,
@@ -120,7 +73,6 @@ export default function Analytics() {
 
   const liveAgentPerf = useMemo(() => {
     const list = agentsData?.agents || [];
-    if (!list.length) return AGENT_PERF;
     return list.slice(0, 6).map((a) => {
       const initials = (a.name || a.email || "??").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
       return {
@@ -129,11 +81,63 @@ export default function Analytics() {
         tone: "#E9F5E0",
         color: "#3FA02A",
         resolved: a.resolved || 0,
-        avgResp: a.total ? `${a.resolved}/${a.total}` : "—",
-        csat: "—",
+        avgResp: a.total ? `${a.resolved}/${a.total}` : "-",
+        csat: "-",
       };
     });
   }, [agentsData]);
+
+  const liveStatusData = useMemo(() => {
+    if (!overview) return [];
+    const total = overview.total || 1;
+    return [
+      { key: "Open", value: overview.open || 0, pct: Math.round(((overview.open || 0) / total) * 100), color: "#3FA02A" },
+      { key: "Resolved", value: overview.resolved || 0, pct: Math.round(((overview.resolved || 0) / total) * 100), color: "#D63384" },
+      { key: "Closed", value: overview.closed || 0, pct: Math.round(((overview.closed || 0) / total) * 100), color: "#7C5CFF" },
+    ].filter(d => d.value > 0);
+  }, [overview]);
+
+  const liveChannels = useMemo(() => {
+    // We mock channel logic as channel breakdown doesn't strictly exist on tickets, we map categories to channels
+    const total = categoriesData?.total || 1;
+    const cats = categoriesData?.categories || [];
+    return cats.slice(0, 4).map((c, i) => {
+      const colors = ["#7C5CFF", "#3FA02A", "#C28A00", "#D63384"];
+      return {
+        key: c._id || "Other",
+        value: c.count,
+        pct: Math.round((c.count / total) * 100),
+        color: colors[i % colors.length]
+      };
+    });
+  }, [categoriesData]);
+
+  const liveTopIssues = useMemo(() => {
+    const total = categoriesData?.total || 1;
+    const cats = categoriesData?.categories || [];
+    return cats.slice(0, 5).map((c) => ({
+      issue: c._id || "Other",
+      tickets: c.count,
+      pct: Math.round((c.count / total) * 100)
+    }));
+  }, [categoriesData]);
+
+  const liveSla = useMemo(() => {
+    if (!overview || !overview.sla) return { met: 0, breached: 0 };
+    return overview.sla;
+  }, [overview]);
+
+  const livePerfSeries = useMemo(() => {
+    const list = trends?.trends || [];
+    if (!list.length) return { labels: ["No Data"], lines: [] };
+    const labels = list.slice(-7).map((t) => new Date(t.date).toLocaleDateString(undefined, { month: "short", day: "numeric" }));
+    return {
+      labels,
+      lines: [
+        { key: "Tickets Opened", color: "#7C5CFF", dash: "0", data: list.slice(-7).map(t => t.count) }
+      ]
+    };
+  }, [trends]);
 
   return (
     <AppShell
@@ -173,11 +177,11 @@ export default function Analytics() {
         </Card>
         <Card>
           <CardHeader title="Tickets by Status" />
-          <DonutChart data={STATUS_DATA} total={12458} />
+          <DonutChart data={liveStatusData.length ? liveStatusData : [{ key: "No Data", value: 1, pct: 100, color: "#e5e7eb" }]} total={overview?.total || 0} />
         </Card>
         <Card>
           <CardHeader title="Tickets by Channel" />
-          <BarsChart data={CHANNELS} />
+          <BarsChart data={liveChannels} />
         </Card>
       </div>
 
@@ -188,7 +192,7 @@ export default function Analytics() {
             title="Performance Over Time"
             right={
               <div className="flex flex-wrap items-center gap-3 text-[10px] font-semibold text-black/55">
-                {PERF_SERIES.lines.map((l) => (
+                {livePerfSeries.lines.map((l) => (
                   <span key={l.key} className="inline-flex items-center gap-1.5">
                     <span
                       className="inline-block h-[3px] w-5 rounded-full"
@@ -205,7 +209,7 @@ export default function Analytics() {
               </div>
             }
           />
-          <MultiLineChart series={PERF_SERIES} />
+          <MultiLineChart series={livePerfSeries} />
         </Card>
 
         <Card>
@@ -219,9 +223,12 @@ export default function Analytics() {
               </tr>
             </thead>
             <tbody>
-              {TOP_ISSUES.map((t) => (
+              {liveTopIssues.length === 0 && (
+                <tr><td colSpan="3" className="py-4 text-center text-black/50">No data found</td></tr>
+              )}
+              {liveTopIssues.map((t) => (
                 <tr key={t.issue} className="border-t border-black/5 align-middle">
-                  <Td className="font-semibold">{t.issue}</Td>
+                  <Td className="font-semibold capitalize">{t.issue}</Td>
                   <Td className="text-right font-semibold text-black/70">{t.tickets.toLocaleString()}</Td>
                   <Td className="text-right font-medium text-black/55">{t.pct}%</Td>
                 </tr>
@@ -248,6 +255,9 @@ export default function Analytics() {
               </tr>
             </thead>
             <tbody>
+              {liveAgentPerf.length === 0 && (
+                 <tr><td colSpan="4" className="py-4 text-center text-black/50">No data found</td></tr>
+              )}
               {liveAgentPerf.map((a) => (
                 <tr key={a.name} className="border-t border-black/5 align-middle">
                   <Td>
@@ -275,7 +285,7 @@ export default function Analytics() {
 
         <Card>
           <CardHeader title="SLA Compliance" />
-          <SlaDonut met={SLA.met} breached={SLA.breached} />
+          <SlaDonut met={liveSla.met} breached={liveSla.breached} />
           <div className="mt-3 text-right">
             <TextLink>View SLA Report →</TextLink>
           </div>
@@ -535,7 +545,7 @@ function DonutChart({ data, total }) {
 }
 
 function SlaDonut({ met, breached }) {
-  const total = met + breached;
+  const total = (met + breached) || 1;
   const pctMet = (met / total) * 100;
   const pctBreached = 100 - pctMet;
   const size = 160, stroke = 24, r = (size - stroke) / 2, c = 2 * Math.PI * r;
@@ -587,7 +597,8 @@ function SlaDonut({ met, breached }) {
 }
 
 function BarsChart({ data }) {
-  const max = Math.max(...data.map((d) => d.value));
+  if (!data.length) return <p className="py-4 text-center text-[11px] text-black/50">No data found</p>;
+  const max = Math.max(...data.map((d) => d.value)) || 1;
   return (
     <ul className="space-y-3">
       {data.map((d) => (

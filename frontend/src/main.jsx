@@ -19,10 +19,9 @@ const queryClient = new QueryClient({
 });
 
 async function enableMocking() {
-  // Enable in dev unless explicitly disabled, or in any env if VITE_USE_MOCK=true
-  const flag = import.meta.env.VITE_USE_MOCK;
-  const shouldMock = flag === "true" || (import.meta.env.DEV && flag !== "false");
-  if (!shouldMock) return;
+  // Only enable mocks in DEV mode AND when explicitly opted-in
+  // Production builds (import.meta.env.DEV === false) will never reach this code
+  if (!import.meta.env.DEV || import.meta.env.VITE_USE_MOCK !== "true") return;
   const { worker } = await import("./mocks/browser");
   await worker.start({
     onUnhandledRequest: "bypass",

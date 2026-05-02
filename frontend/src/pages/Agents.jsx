@@ -24,6 +24,7 @@ import {
   UserX,
   Users,
   X,
+  Loader2,
 } from "lucide-react";
 
 /* ----------------------------- mock data ----------------------------- */
@@ -52,16 +53,6 @@ const ROLE_TONES = {
   Trainee:    { bg: "#FCE7F3", color: "#D63384" },
 };
 
-const AGENTS = [
-  { id: "u1", name: "Alex Johnson",  email: "alex.johnson@support.com",  role: "Admin", status: "Online",  handled: 128, resolved: 120, avg: "2h 15m", lastActive: "2m ago",  joined: "Jan 15, 2024", firstResp: "45m", rating: 4.2 },
-  { id: "u2", name: "Maria Garcia",  email: "maria.garcia@support.com",  role: "Agent", status: "Online",  handled:  96, resolved:  89, avg: "2h 45m", lastActive: "5m ago",  joined: "Feb 02, 2024", firstResp: "52m", rating: 4.0 },
-  { id: "u3", name: "David Brown",   email: "david.brown@support.com",   role: "Agent", status: "Online",  handled:  76, resolved:  70, avg: "3h 05m", lastActive: "12m ago", joined: "Mar 10, 2024", firstResp: "1h 02m", rating: 4.1 },
-  { id: "u4", name: "James Wilson",  email: "james.wilson@support.com",  role: "Agent", status: "Offline", handled:  64, resolved:  58, avg: "3h 20m", lastActive: "1h ago",  joined: "Mar 22, 2024", firstResp: "1h 08m", rating: 3.9 },
-  { id: "u5", name: "Sophia Lee",    email: "sophia.lee@support.com",    role: "Agent", status: "Online",  handled:  52, resolved:  48, avg: "2h 30m", lastActive: "8m ago",  joined: "Apr 05, 2024", firstResp: "55m", rating: 4.3 },
-  { id: "u6", name: "Ethan Taylor",  email: "ethan.taylor@support.com",  role: "Agent", status: "Offline", handled:  41, resolved:  37, avg: "4h 10m", lastActive: "2h ago",  joined: "Apr 18, 2024", firstResp: "1h 20m", rating: 3.8 },
-  { id: "u7", name: "Olivia Lewis",  email: "olivia.lewis@support.com",  role: "Agent", status: "Online",  handled:  38, resolved:  38, avg: "2h 55m", lastActive: "15m ago", joined: "May 02, 2024", firstResp: "48m", rating: 4.5 },
-];
-
 const WORKFLOW = [
   { key: "add",        title: "Add Agent",  desc: "Create new agent and assign role", icon: UserPlus, tone: "#F1ECFF", color: "#7C5CFF" },
   { key: "role",       title: "Assign Role",desc: "Set permissions for the agent",    icon: Shield,   tone: "#E9F5E0", color: "#3FA02A" },
@@ -85,14 +76,14 @@ function adaptAgent(u) {
     status:      u.isActive === false ? "Deactivated" : "Online",
     handled:     u.metrics?.handled  ?? 0,
     resolved:    u.metrics?.resolved ?? 0,
-    avg:         u.metrics?.avg      ?? "—",
+    avg:         u.metrics?.avg      ?? "-",
     lastActive:  u.lastActiveAt
       ? new Date(u.lastActiveAt).toLocaleString()
       : u.updatedAt
       ? new Date(u.updatedAt).toLocaleDateString()
-      : "—",
-    joined:      u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—",
-    firstResp:   u.metrics?.firstResp ?? "—",
+      : "-",
+    joined:      u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "-",
+    firstResp:   u.metrics?.firstResp ?? "-",
     rating:      u.metrics?.rating    ?? 0,
     raw:         u,
   };
@@ -117,6 +108,19 @@ export default function Agents() {
   const [selectedId, setSelectedId] = useState(null);
   const [showDetails, setShowDetails] = useState(true);
 
+  const liveSummary = useMemo(() => {
+    const total = allAgents.length;
+    const active = allAgents.filter(a => a.status === "Online").length;
+    const deactivated = allAgents.filter(a => a.status === "Deactivated").length;
+    
+    return [
+      { key: "total",   label: "Total Agents",   value: total.toString(), hint: "Current",  icon: Users,        tone: "#F1ECFF", color: "#7C5CFF" },
+      { key: "active",  label: "Active Agents",  value: active.toString(), hint: total ? `${Math.round((active/total)*100)}% of total` : "",    icon: ShieldCheck,  tone: "#E9F5E0", color: "#3FA02A" },
+      { key: "offline", label: "Deactivated", value: deactivated.toString(),  hint: total ? `${Math.round((deactivated/total)*100)}% of total` : "",    icon: UserX,        tone: "#FCE7F3", color: "#D63384" },
+      { key: "roles",   label: "Roles",          value: "3",  hint: "Admin, Agent, Trainee", icon: Shield,    tone: "#FFF5DC", color: "#C28A00" },
+    ];
+  }, [allAgents]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = allAgents.filter((a) => {
@@ -134,8 +138,8 @@ export default function Agents() {
   const selected =
     allAgents.find((a) => a.id === selectedId) ||
     allAgents[0] || {
-      id: null, name: "No agents yet", email: "—", role: "Agent", status: "Offline",
-      handled: 0, resolved: 0, avg: "—", lastActive: "—", joined: "—", firstResp: "—", rating: 0,
+      id: null, name: "No agents yet", email: "-", role: "Agent", status: "Offline",
+      handled: 0, resolved: 0, avg: "-", lastActive: "-", joined: "-", firstResp: "-", rating: 0,
     };
 
   const handleInvite = async () => {
@@ -179,7 +183,7 @@ export default function Agents() {
     >
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {SUMMARY.map((s) => <SummaryCard key={s.key} {...s} />)}
+        {liveSummary.map((s) => <SummaryCard key={s.key} {...s} />)}
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
@@ -233,7 +237,13 @@ export default function Agents() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((a) => {
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={8} className="px-2 py-8 text-center text-[12px] font-medium text-black/45">
+                      <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+                    </td>
+                  </tr>
+                ) : filtered.map((a) => {
                   const sel = a.id === selectedId;
                   const st = STATUS_TONES[a.status] || STATUS_TONES.Offline;
                   return (
@@ -277,7 +287,7 @@ export default function Agents() {
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && (
+                {!isLoading && filtered.length === 0 && (
                   <tr>
                     <td colSpan={8} className="px-2 py-8 text-center text-[12px] font-medium text-black/45">
                       No agents match the current filters.
@@ -307,7 +317,7 @@ export default function Agents() {
           </div>
         </Card>
 
-        {/* Right panel — Agent overview */}
+        {/* Right panel - Agent overview */}
         {showDetails && (
           <Card>
             <div className="mb-3 flex items-center justify-between">

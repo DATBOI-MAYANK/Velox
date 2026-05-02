@@ -37,3 +37,9 @@ export const useAiDeflection = (params) =>
     queryKey: qk.analytics.aiDeflection(params),
     queryFn: () => analytics.aiDeflection(params),
   });
+
+export const useCategories = (params) =>
+  useQuery({
+    queryKey: ["analytics", "categories", params],
+    queryFn: () => analytics.categories(params),
+  });
