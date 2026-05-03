@@ -77,8 +77,6 @@ services:
   mongo:
     image: mongo:6
     container_name: velox_mongo
-    ports:
-      - "27017:27017"
     volumes:
       - mongo-data:/data/db
     healthcheck:
@@ -91,8 +89,6 @@ services:
   redis:
     image: redis:7-alpine
     container_name: velox_redis
-    ports:
-      - "6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:

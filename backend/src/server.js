@@ -77,8 +77,18 @@ httpServer.listen(PORT, () => console.log(`Server on port ${PORT}`));
 async function shutdown(signal) {
   console.log(`\n${signal} received — shutting down gracefully...`);
 
-  // 1. Stop accepting new connections
-  httpServer.close(() => console.log("HTTP server closed"));
+  // 1. Stop accepting new connections and wait for in-flight requests to finish
+  await new Promise((resolve) => {
+    const timeout = setTimeout(() => {
+      console.warn("HTTP server close timed out — forcing exit");
+      resolve();
+    }, 10000);
+    httpServer.close(() => {
+      clearTimeout(timeout);
+      console.log("HTTP server closed");
+      resolve();
+    });
+  });
 
   // 2. Close Socket.IO
   try {

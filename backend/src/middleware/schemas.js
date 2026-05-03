@@ -152,5 +152,12 @@ export const widgetTicketSchema = z.object({
   customerName: shortStr.optional(),
   customerEmail: email.optional(),
   subject: shortStr.optional(),
-  transcript: z.array(z.any()).optional(),
+  transcript: z.array(
+    z.object({
+      sender: z.string().trim().min(1).max(100),
+      text: z.string().trim().min(1).max(2000),
+    })
+  ).max(200).optional(),
+}).refine((d) => d.content || d.subject, {
+  message: "Provide at least content or subject",
 });

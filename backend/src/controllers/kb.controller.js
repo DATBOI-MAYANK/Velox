@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 /**
  * @desc    Get all KB articles for the tenant
  * @route   GET /admin/kb
- * @access  Private (Admin/Agent)
+ * @access  Private (Admin)
  */
 export const listKbArticles = async (req, res) => {
   const articles = await KbArticle.find({ tenantId: req.tenant })
@@ -17,7 +17,7 @@ export const listKbArticles = async (req, res) => {
 /**
  * @desc    Get a single KB article by ID
  * @route   GET /admin/kb/:id
- * @access  Private (Admin/Agent)
+ * @access  Private (Admin)
  */
 export const getKbArticle = async (req, res) => {
   const article = await KbArticle.findOne({

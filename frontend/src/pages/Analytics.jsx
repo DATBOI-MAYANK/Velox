@@ -99,12 +99,12 @@ export default function Analytics() {
 
   const liveChannels = useMemo(() => {
     // We mock channel logic as channel breakdown doesn't strictly exist on tickets, we map categories to channels
-    const total = categoriesData?.total || 1;
     const cats = categoriesData?.categories || [];
+    const total = cats.reduce((s, c) => s + c.count, 0) || 1;
     return cats.slice(0, 4).map((c, i) => {
       const colors = ["#7C5CFF", "#3FA02A", "#C28A00", "#D63384"];
       return {
-        key: c._id || "Other",
+        key: c.category || "Other",
         value: c.count,
         pct: Math.round((c.count / total) * 100),
         color: colors[i % colors.length]
@@ -113,10 +113,10 @@ export default function Analytics() {
   }, [categoriesData]);
 
   const liveTopIssues = useMemo(() => {
-    const total = categoriesData?.total || 1;
     const cats = categoriesData?.categories || [];
+    const total = cats.reduce((s, c) => s + c.count, 0) || 1;
     return cats.slice(0, 5).map((c) => ({
-      issue: c._id || "Other",
+      issue: c.category || "Other",
       tickets: c.count,
       pct: Math.round((c.count / total) * 100)
     }));

@@ -20,24 +20,6 @@ export const useAgentPerformance = (params) =>
     queryFn: () => analytics.agentPerformance(params),
   });
 
-export const useCsat = (params) =>
-  useQuery({
-    queryKey: qk.analytics.csat(params),
-    queryFn: () => analytics.csat(params),
-  });
-
-export const useChannelBreakdown = (params) =>
-  useQuery({
-    queryKey: qk.analytics.channels(params),
-    queryFn: () => analytics.channels(params),
-  });
-
-export const useAiDeflection = (params) =>
-  useQuery({
-    queryKey: qk.analytics.aiDeflection(params),
-    queryFn: () => analytics.aiDeflection(params),
-  });
-
 export const useCategories = (params) =>
   useQuery({
     queryKey: ["analytics", "categories", params],

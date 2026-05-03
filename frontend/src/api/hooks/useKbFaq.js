@@ -17,12 +17,6 @@ export const useKbArticle = (id) =>
     enabled: Boolean(id),
   });
 
-export const useKbCategories = () =>
-  useQuery({
-    queryKey: qk.kb.categories,
-    queryFn: () => kb.categories(),
-  });
-
 export function useCreateKbArticle() {
   const qc = useQueryClient();
   return useMutation({

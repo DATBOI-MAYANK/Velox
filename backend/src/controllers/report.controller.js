@@ -5,7 +5,7 @@ import { ApiError } from "../utils/ApiError.js";
 /**
  * @desc    Get all reports for the tenant
  * @route   GET /admin/reports
- * @access  Private (Admin/Agent)
+ * @access  Private (Admin)
  */
 export const listReports = async (req, res) => {
   const reports = await Report.find({ tenantId: req.tenant })
@@ -18,7 +18,7 @@ export const listReports = async (req, res) => {
 /**
  * @desc    Create a new report
  * @route   POST /admin/reports
- * @access  Private (Admin/Agent)
+ * @access  Private (Admin)
  */
 export const createReport = async (req, res) => {
   const { name, type, desc, frequency } = req.body;

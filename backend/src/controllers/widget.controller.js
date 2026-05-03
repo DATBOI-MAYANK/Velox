@@ -1,6 +1,6 @@
 import Tenant from "../models/Tenant.js";
 import Ticket from "../models/Ticket.js";
-import ChatMessage from "../models/ChatMessage.js";
+import Message from "../models/Message.js";
 import { getIO } from "../socket/index.js";
 import crypto from "crypto";
 
@@ -68,12 +68,16 @@ export const createTicket = async (req, res) => {
     return res.status(404).json({ success: false, message: "Invalid API key" });
 
   const ticketSubject = subject || `Chat from ${customerName || 'Guest'} - ${new Date().toLocaleDateString()}`;
+  const ticketBody = content || "Created ticket via widget.";
 
   const ticket = new Ticket({
     tenantId: tenant._id,
     subject: ticketSubject,
-    customerName: customerName || "Guest",
-    customerEmail: customerEmail || "guest@example.com",
+    customer: {
+      name:  customerName || "Guest",
+      email: customerEmail || "guest@example.com",
+    },
+    body: ticketBody,
     status: "open",
     priority: "medium",
     lastMessageAt: new Date()
@@ -82,23 +86,21 @@ export const createTicket = async (req, res) => {
   await ticket.save();
 
   // Save the first message (the content of the user's issue)
-  const initialMessage = new ChatMessage({
+  const initialMessage = new Message({
     ticketId: ticket._id,
     tenantId: tenant._id,
-    sender: { type: "customer", name: ticket.customerName },
-    content: content || "Created ticket via widget.",
-    isInternal: false,
+    senderType: "customer",
+    content: ticketBody,
   });
   await initialMessage.save();
 
   if (transcript && transcript.length > 0) {
     const transcriptText = transcript.map(t => `[${t.sender}]: ${t.text}`).join('\n');
-    const note = new ChatMessage({
+    const note = new Message({
       ticketId: ticket._id,
       tenantId: tenant._id,
-      sender: { type: "system", name: "System" },
+      senderType: "ai",
       content: `Chat Transcript:\n${transcriptText}`,
-      isInternal: true,
     });
     await note.save();
   }
