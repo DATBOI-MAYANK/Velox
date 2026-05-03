@@ -17,16 +17,26 @@ export const useKbArticle = (id) =>
     enabled: Boolean(id),
   });
 
-export const useKbCategories = () =>
-  useQuery({
-    queryKey: qk.kb.categories,
-    queryFn: () => kb.categories(),
-  });
-
 export function useCreateKbArticle() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body) => kb.create(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.kb.all }),
+  });
+}
+
+export function useUpdateKbArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }) => kb.update(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.kb.all }),
+  });
+}
+
+export function useRemoveKbArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => kb.remove(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.kb.all }),
   });
 }

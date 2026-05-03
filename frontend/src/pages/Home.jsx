@@ -32,19 +32,21 @@ import {
   Instagram,
   ArrowUpRight,
   MapPin,
+  X,
 } from "lucide-react";
 import FeaturesCollage from "@components/FeaturesCollage";
 import TeamSection from "@components/TeamSection";
 
 export default function Home() {
   const heroStage = useRef(null);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState(false);
 
   useGSAP(
     () => {
       const cards = gsap.utils.toArray(".hero-pop");
       if (!cards.length) return;
 
-      // Initial reveal — staggered drop with elastic settle
+      // Initial reveal - staggered drop with elastic settle
       gsap.from(cards, {
         y: 80,
         opacity: 0,
@@ -64,7 +66,7 @@ export default function Home() {
         gsap.set(card, { rotation: baseRotate, transformOrigin: "50% 50%" });
         gsap.set(inner, { transformPerspective: 1100, transformStyle: "preserve-3d" });
 
-        // Idle float — staggered per card, paused on hover
+        // Idle float - staggered per card, paused on hover
         const float = gsap.to(card, {
           y: -8,
           duration: 2.2 + i * 0.15,
@@ -219,12 +221,12 @@ export default function Home() {
           </h1>
         </div>
 
-        {/* Doodle stage — flex row, wraps on mobile */}
+        {/* Doodle stage - flex row, wraps on mobile */}
         <div
           ref={heroStage}
           className="relative mt-10 flex flex-wrap items-center justify-center gap-8 sm:mt-14 lg:flex-nowrap [perspective:1200px]"
         >
-          {/* —————— Floating doodle pops around the stage —————— */}
+          {/* ------ Floating doodle pops around the stage ------ */}
           {/* squiggle, top-left */}
           <svg aria-hidden className="pointer-events-none absolute -top-6 left-0 h-10 w-20 -rotate-[8deg]" viewBox="0 0 80 30" fill="none">
             <path d="M 4 18 Q 14 4, 24 18 T 44 18 T 64 18 T 84 18" stroke="#FE90E8" strokeWidth="4" strokeLinecap="round" />
@@ -255,7 +257,7 @@ export default function Home() {
           <svg aria-hidden className="pointer-events-none absolute right-0 top-1/3 h-12 w-14 rotate-[-10deg]" viewBox="0 0 60 50" fill="none">
             <path d="M 6 10 Q 18 0, 30 12 T 54 14 M 8 28 Q 24 22, 40 32 M 10 44 L 50 38" stroke="#F7CB46" strokeWidth="3.5" strokeLinecap="round" fill="none" />
           </svg>
-          {/* LEFT — #1 ticket card */}
+          {/* LEFT - #1 ticket card */}
           <div
             data-rotate="-4"
             className="hero-pop group relative w-[320px] shrink-0 rounded-[20px] border-[4px] border-black p-6 shadow-[10px_10px_0_0_#000]"
@@ -295,7 +297,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* CENTER — Chat Preview window */}
+          {/* CENTER - Chat Preview window */}
           <div
             data-rotate="0"
             className="hero-pop group relative w-full max-w-[540px] shrink-0 overflow-hidden rounded-[24px] border-[4px] border-black bg-white shadow-[14px_14px_0_0_#000]"
@@ -361,7 +363,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* RIGHT — 4.9 review card */}
+          {/* RIGHT - 4.9 review card */}
           <div
             data-rotate="4"
             className="hero-pop group relative w-[320px] shrink-0 rounded-[20px] border-[4px] border-black p-6 shadow-[10px_10px_0_0_#000]"
@@ -407,7 +409,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* CTA — clear hierarchy: dominant primary, lightweight secondary, micro trust */}
+        {/* CTA - clear hierarchy: dominant primary, lightweight secondary, micro trust */}
         <div className="relative mt-12 flex flex-col items-center">
           {/* sparkle accents (kept tight around the action zone) */}
           <span aria-hidden className="cta-spark pointer-events-none absolute -top-5 left-1/2 hidden -translate-x-[180px] sm:inline-block">
@@ -426,7 +428,7 @@ export default function Home() {
             </svg>
           </span>
 
-          {/* Action row — primary anchors, secondary recedes */}
+          {/* Action row - primary anchors, secondary recedes */}
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-4">
             {/* PRIMARY */}
             <Link to="/chat" className="cta-btn cta-btn-primary group">
@@ -442,8 +444,11 @@ export default function Home() {
               </span>
             </Link>
 
-            {/* SECONDARY — white outlined pill */}
-            <button className="cta-btn cta-btn-ghost group">
+            {/* SECONDARY - white outlined pill */}
+            <button 
+              className="cta-btn cta-btn-ghost group"
+              onClick={() => setIsVideoModalOpen(true)}
+            >
               <span className="flex h-7 w-7 items-center justify-center rounded-full border-[3px] border-black bg-mint shadow-[2px_2px_0_0_#000]">
                 <Play size={11} strokeWidth={4} fill="currentColor" />
               </span>
@@ -451,7 +456,7 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Micro trust line — supportive, not competing */}
+          {/* Micro trust line - supportive, not competing */}
           <div className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[13px] font-bold text-black/70">
             <span className="inline-flex items-center gap-1.5">
               <Check size={14} strokeWidth={4} className="text-black" /> No credit card
@@ -467,12 +472,12 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bottom strip — Claud-style: 3 columns, lilac, mascot in middle */}
+        {/* Bottom strip - Claud-style: 3 columns, lilac, mascot in middle */}
         <div
           className="mx-auto mt-14 grid max-w-6xl grid-cols-1 items-center gap-6 rounded-[22px] border-[3px] border-black p-6 shadow-[8px_8px_0_0_#000] md:grid-cols-3 md:p-8"
           style={{ background: "#D9C7FF" }}
         >
-          {/* LEFT — headline */}
+          {/* LEFT - headline */}
           <h3 className="font-display text-3xl uppercase leading-[0.95] md:text-4xl">
             Reply Faster.
             <br />
@@ -486,7 +491,7 @@ export default function Home() {
             </span>
           </h3>
 
-          {/* CENTER — mascot doodle (chilling blob with phone) */}
+          {/* CENTER - mascot doodle (chilling blob with phone) */}
           <div className="flex items-center justify-center">
             <svg
               viewBox="0 0 280 140"
@@ -507,7 +512,7 @@ export default function Home() {
                 {/* blob body (cloud-ish) */}
                 <path d="M 110 100 C 90 100, 80 80, 92 70 C 90 52, 116 44, 124 56 C 138 40, 168 44, 172 64 C 192 60, 208 84, 196 100 C 210 110, 198 130, 178 126 L 118 126 C 102 126, 96 116, 110 100 Z" />
 
-                {/* face — big smile + closed eye */}
+                {/* face - big smile + closed eye */}
                 <path d="M 138 80 q 5 -5 10 0" fill="none" />
                 <path d="M 154 80 q 5 -5 10 0" fill="none" />
                 <path d="M 144 96 q 10 10 22 -2" fill="none" />
@@ -528,7 +533,7 @@ export default function Home() {
             </svg>
           </div>
 
-          {/* RIGHT — real-photo avatar stack + caption below */}
+          {/* RIGHT - real-photo avatar stack + caption below */}
           <div className="flex flex-col items-center gap-3 md:items-end">
             <div className="flex -space-x-4">
               {[
@@ -600,9 +605,9 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col items-start gap-2 md:items-end">
-            <button className="brutal-btn brutal-btn-ink">
+            <Link to="/chat" className="brutal-btn brutal-btn-ink">
               <MessageCircle size={18} strokeWidth={3} /> Start Chat Now
-            </button>
+            </Link>
             <span className="flex items-center gap-2 text-xs font-bold">
               <span className="flex h-5 w-5 items-center justify-center rounded-full border-[2px] border-black bg-mint">
                 <Check size={10} strokeWidth={4} />
@@ -615,6 +620,41 @@ export default function Home() {
 
       {/* ============ FOOTER ============ */}
       <SiteFooter />
+
+      {/* ============ VIDEO MODAL ============ */}
+      {isVideoModalOpen && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setIsVideoModalOpen(false)}
+        >
+          <div 
+            className="relative w-full max-w-4xl overflow-hidden rounded-[20px] border-[4px] border-black bg-paper shadow-[12px_12px_0_0_#000]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b-[4px] border-black bg-mustard px-4 py-3">
+              <h3 className="font-display text-lg uppercase tracking-wider">Velox Demo</h3>
+              <button 
+                onClick={() => setIsVideoModalOpen(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full border-[2px] border-black bg-white transition-transform hover:scale-110"
+              >
+                <X size={16} strokeWidth={3} />
+              </button>
+            </div>
+            
+            {/* Video Container (16:9 Aspect Ratio) */}
+            <div className="relative w-full pb-[56.25%]">
+              <iframe 
+                src="https://player.vimeo.com/video/76979871?autoplay=1&title=0&byline=0&portrait=0" 
+                title="Velox Demo Video" 
+                allow="autoplay; fullscreen; picture-in-picture" 
+                allowFullScreen
+                className="absolute left-0 top-0 h-full w-full bg-black object-cover"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -692,7 +732,7 @@ function SiteFooter() {
 
   return (
     <footer className="relative mt-24" ref={magnetRef}>
-      {/* Inline keyframes — kept here so they always ship with the
+      {/* Inline keyframes - kept here so they always ship with the
          footer regardless of Tailwind cache state. */}
       <style>{`@keyframes velox-wave-flow{from{transform:translate3d(-50%,0,0)}to{transform:translate3d(0,0,0)}}@keyframes velox-marquee-scroll{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}@keyframes velox-stamp-wobble{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(-2deg) scale(1.04)}}`}</style>
 
@@ -722,7 +762,7 @@ function SiteFooter() {
           </svg>
         </div>
 
-        {/* Floating "let's ship" stamp — BIG poppy */}
+        {/* Floating "let's ship" stamp - BIG poppy */}
         <div
           className="absolute left-[6%] top-[-26px] rounded-xl border-[4px] border-black bg-black px-5 py-2 text-cream shadow-[6px_6px_0_0_#FFC9E0] sm:px-6 sm:py-3"
           style={{ animation: "velox-stamp-wobble 3.6s ease-in-out infinite" }}
@@ -733,7 +773,7 @@ function SiteFooter() {
         </div>
       </div>
 
-      {/* Cream wave divider — animated */}
+      {/* Cream wave divider - animated */}
       <AnimatedWave />
 
       {/* Main footer body */}
@@ -746,7 +786,7 @@ function SiteFooter() {
                 <Sparkles size={16} strokeWidth={3.5} /> velox · support, but make it fast
               </span>
               <p className="mt-4 font-display text-xl uppercase leading-[1.05] sm:text-2xl">
-                From inbox chaos to first-reply zen — the AI helpdesk your
+                From inbox chaos to first-reply zen - the AI helpdesk your
                 team will actually want to log into.
               </p>
             </div>
@@ -797,7 +837,7 @@ function SiteFooter() {
                 velox
               </span>
               <span className="hidden text-[11px] font-bold uppercase tracking-[0.3em] text-black/60 md:inline">
-                /vəˈlɒks/ — rapid, swift
+                /vəˈlɒks/ - rapid, swift
               </span>
               <span
                 aria-hidden
@@ -833,7 +873,7 @@ function SiteFooter() {
           </div>
         </div>
 
-        {/* Marquee bottom band — BIG JOLLY scroller */}
+        {/* Marquee bottom band - BIG JOLLY scroller */}
         <div
           className="relative overflow-hidden border-y-[3px] border-black py-4 sm:py-6"
           style={{ background: "#7C5CFF" }}
@@ -887,7 +927,7 @@ function SiteFooter() {
   );
 }
 
-/* Animated cream wave divider — the wave flows from left to
+/* Animated cream wave divider - the wave flows from left to
    right. We render TWO identical wave SVGs side-by-side and
    shift the parent by -50% so the second copy seamlessly takes
    over when the first scrolls off. */
@@ -961,7 +1001,7 @@ function Testimonials() {
     },
     {
       quote:
-        "The AI suggestions are genuinely useful — not noise. My team accepts about 70% of them with zero edits.",
+        "The AI suggestions are genuinely useful - not noise. My team accepts about 70% of them with zero edits.",
       name: "Marcus Lee",
       role: "Support Lead, Northwind",
       avatar: "https://i.pravatar.cc/120?img=14",
@@ -1151,7 +1191,7 @@ function Integrations() {
     { name: "Zapier", Icon: Zap, bg: "#99E885" },
   ];
 
-  // Magnetic repel — tiles drift away from the cursor like a soft air-blow,
+  // Magnetic repel - tiles drift away from the cursor like a soft air-blow,
   // then ease back to their resting spot.
   const gridRef = useRef(null);
   useGSAP(
@@ -1261,7 +1301,7 @@ function FAQ() {
     },
     {
       q: "How does the AI actually help my agents?",
-      a: "Velox drafts replies using your knowledge base and past resolved tickets. Agents accept, edit, or reject — you stay in control while the AI handles the boring 80%.",
+      a: "Velox drafts replies using your knowledge base and past resolved tickets. Agents accept, edit, or reject - you stay in control while the AI handles the boring 80%.",
     },
     {
       q: "Can I bring my own data and docs?",
@@ -1277,13 +1317,13 @@ function FAQ() {
     },
     {
       q: "Can I migrate from Zendesk / Intercom / Freshdesk?",
-      a: "Yes — we ship a one-click importer for tickets, contacts, and macros. Most teams are fully moved over in under a day.",
+      a: "Yes - we ship a one-click importer for tickets, contacts, and macros. Most teams are fully moved over in under a day.",
     },
   ];
   const [open, setOpen] = useState(0);
   const [hover, setHover] = useState(-1);
 
-  // Magnetic repel — the plus/x circles drift away from the cursor
+  // Magnetic repel - the plus/x circles drift away from the cursor
   // smoothly, then ease back to their resting spot.
   const listRef = useRef(null);
   useGSAP(
@@ -1384,7 +1424,7 @@ function FAQItem({ index, item, isOpen, isHover, onToggle, onHover, onLeave, tot
   const numRef = useRef(null);
   const lettersRef = useRef(null);
 
-  // Open / close animation — height, opacity, and word-by-word answer stagger
+  // Open / close animation - height, opacity, and word-by-word answer stagger
   useGSAP(
     () => {
       if (!panelRef.current || !innerRef.current) return;
@@ -1486,7 +1526,7 @@ function FAQItem({ index, item, isOpen, isHover, onToggle, onHover, onLeave, tot
       onMouseLeave={onLeave}
       className="relative overflow-hidden rounded-[16px] border-[3px] border-black bg-white shadow-[5px_5px_0_0_#000]"
     >
-      {/* Left accent bar — grows from top on hover/open */}
+      {/* Left accent bar - grows from top on hover/open */}
       <div
         ref={barRef}
         aria-hidden
@@ -1500,7 +1540,7 @@ function FAQItem({ index, item, isOpen, isHover, onToggle, onHover, onLeave, tot
         className="relative flex w-full items-center gap-3 px-4 py-4 text-left sm:px-5"
         aria-expanded={isOpen}
       >
-        {/* Number prefix — slides in on hover */}
+        {/* Number prefix - slides in on hover */}
         <span
           ref={numRef}
           className="hidden font-display text-[11px] uppercase tracking-[0.2em] text-black/50 opacity-0 sm:inline-block"

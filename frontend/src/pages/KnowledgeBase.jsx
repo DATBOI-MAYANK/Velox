@@ -15,7 +15,9 @@ import {
   Plus,
   Search,
   X,
+  Loader2,
 } from "lucide-react";
+import { useKbArticles } from "@api/hooks/useKbFaq";
 
 /* ----------------------------- mock data ----------------------------- */
 const SUMMARY = [
@@ -25,12 +27,7 @@ const SUMMARY = [
   { key: "used",      label: "Used in Responses",value: "1,248", hint: "This month",       icon: Eye,          tone: "#FCE7F3", color: "#D63384" },
 ];
 
-const TABS = [
-  { key: "all",       label: "All Articles", count: 156 },
-  { key: "published", label: "Published",    count: 132 },
-  { key: "drafts",    label: "Drafts",       count: 18 },
-  { key: "archived",  label: "Archived",     count: 6 },
-];
+
 
 const STATUS_TONES = {
   Published: { bg: "#E9F5E0", color: "#3FA02A" },
@@ -38,16 +35,7 @@ const STATUS_TONES = {
   Archived:  { bg: "#F1ECFF", color: "#7C5CFF" },
 };
 
-const ARTICLES = [
-  { id: "a1", title: "How to track my order?",            category: "Order & Shipping",  status: "Published", used: 342, updated: "May 20, 2025", tags: ["track order", "shipping", "delivery"] },
-  { id: "a2", title: "How can I return an item?",         category: "Returns & Refunds", status: "Published", used: 287, updated: "May 18, 2025", tags: ["returns", "refund"] },
-  { id: "a3", title: "What payment methods do you accept?",category:"Payments",          status: "Published", used: 201, updated: "May 18, 2025", tags: ["payments", "billing"] },
-  { id: "a4", title: "How do I change my account password?",category:"Account Management",status:"Published", used: 156, updated: "May 15, 2025", tags: ["account", "security"] },
-  { id: "a5", title: "How long does delivery take?",      category: "Order & Shipping",  status: "Draft",     used:   0, updated: "May 14, 2025", tags: ["delivery"] },
-  { id: "a6", title: "Do you ship internationally?",      category: "Order & Shipping",  status: "Published", used:  98, updated: "May 12, 2025", tags: ["shipping", "international"] },
-  { id: "a7", title: "How do I contact customer support?",category: "General",           status: "Published", used: 165, updated: "May 10, 2025", tags: ["support"] },
-  { id: "a8", title: "Can I cancel my order?",            category: "Order & Shipping",  status: "Draft",     used:   0, updated: "May 9, 2025",  tags: ["orders", "cancel"] },
-];
+// Removed dummy ARTICLES
 
 const CATEGORIES = ["All Categories", "Order & Shipping", "Returns & Refunds", "Payments", "Account Management", "General"];
 const SORT_OPTIONS = ["Latest", "Most Used", "Title A–Z", "Title Z–A"];
@@ -67,11 +55,21 @@ export default function KnowledgeBase() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All Categories");
   const [sort, setSort] = useState("Latest");
-  const [selectedId, setSelectedId] = useState("a1");
-  const [showDetails, setShowDetails] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+
+  const { data: fetchResult, isLoading } = useKbArticles();
+  const articles = fetchResult?.articles || [];
+
+  const TABS = [
+    { key: "all",       label: "All Articles", count: articles.length },
+    { key: "published", label: "Published",    count: articles.filter(a => a.status === "Published").length },
+    { key: "drafts",    label: "Drafts",       count: articles.filter(a => a.status === "Draft").length },
+    { key: "archived",  label: "Archived",     count: articles.filter(a => a.status === "Archived").length },
+  ];
 
   const filtered = useMemo(() => {
-    let rows = ARTICLES;
+    let rows = articles;
     if (tab === "published") rows = rows.filter((r) => r.status === "Published");
     if (tab === "drafts") rows = rows.filter((r) => r.status === "Draft");
     if (tab === "archived") rows = rows.filter((r) => r.status === "Archived");
@@ -89,9 +87,9 @@ export default function KnowledgeBase() {
     if (sort === "Title A–Z") rows = [...rows].sort((a, b) => a.title.localeCompare(b.title));
     if (sort === "Title Z–A") rows = [...rows].sort((a, b) => b.title.localeCompare(a.title));
     return rows;
-  }, [tab, category, sort, search]);
+  }, [tab, category, sort, search, articles]);
 
-  const selected = ARTICLES.find((a) => a.id === selectedId) || ARTICLES[0];
+  const selected = articles.find((a) => a._id === selectedId) || articles[0];
 
   return (
     <AppShell
@@ -114,9 +112,10 @@ export default function KnowledgeBase() {
     >
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {SUMMARY.map((s) => (
-          <SummaryCard key={s.key} {...s} />
-        ))}
+        <SummaryCard label="Total Articles" value={articles.length} hint="Dynamic" icon={BookOpen} tone="#F1ECFF" color="#7C5CFF" />
+        <SummaryCard label="Published" value={articles.filter(a => a.status === "Published").length} hint="Dynamic" icon={CheckCircle2} tone="#E9F5E0" color="#3FA02A" />
+        <SummaryCard label="Drafts" value={articles.filter(a => a.status === "Draft").length} hint="Dynamic" icon={FileEdit} tone="#FFF5DC" color="#C28A00" />
+        <SummaryCard label="Used in Responses" value={articles.reduce((acc, curr) => acc + (curr.usedCount || 0), 0)} hint="Dynamic" icon={Eye} tone="#FCE7F3" color="#D63384" />
       </div>
 
       {/* Main split: list + details panel */}
@@ -169,21 +168,27 @@ export default function KnowledgeBase() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((a) => {
-                  const sel = a.id === selectedId;
+                {isLoading ? (
+                  <tr>
+                    <td colSpan={6} className="px-2 py-8 text-center text-[12px] font-medium text-black/45">
+                      <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+                    </td>
+                  </tr>
+                ) : filtered.map((a) => {
+                  const sel = a._id === selectedId;
                   return (
                     <tr
-                      key={a.id}
-                      onClick={() => { setSelectedId(a.id); setShowDetails(true); }}
+                      key={a._id}
+                      onClick={() => { setSelectedId(a._id); setShowDetails(true); }}
                       className={`cursor-pointer border-t border-black/5 align-middle transition-colors ${
                         sel ? "bg-[#FAFAF6]" : "hover:bg-[#FAFAF6]"
                       }`}
                     >
                       <Td className="font-semibold">{a.title}</Td>
                       <Td className="font-medium text-black/65">{a.category}</Td>
-                      <Td><Pill tone={STATUS_TONES[a.status]}>{a.status}</Pill></Td>
-                      <Td className="text-right font-semibold text-black/70">{a.used}</Td>
-                      <Td className="font-medium text-black/55">{a.updated}</Td>
+                      <Td><Pill tone={STATUS_TONES[a.status] || STATUS_TONES.Draft}>{a.status}</Pill></Td>
+                      <Td className="text-right font-semibold text-black/70">{a.usedCount}</Td>
+                      <Td className="font-medium text-black/55">{new Date(a.updatedAt).toLocaleDateString()}</Td>
                       <Td className="text-right">
                         <span className="inline-flex items-center gap-1">
                           <IconBtn aria-label="Edit"><Pencil size={12} strokeWidth={2.5} /></IconBtn>
@@ -193,7 +198,7 @@ export default function KnowledgeBase() {
                     </tr>
                   );
                 })}
-                {filtered.length === 0 && (
+                {!isLoading && filtered.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-2 py-8 text-center text-[12px] font-medium text-black/45">
                       No articles match the current filters.
@@ -207,7 +212,7 @@ export default function KnowledgeBase() {
           {/* Pagination */}
           <div className="mt-3 flex items-center justify-between">
             <div className="text-[11px] font-medium text-black/55">
-              Showing 1 to {Math.min(filtered.length, 8)} of 156 articles
+              Showing 1 to {Math.min(filtered.length, 8)} of {filtered.length} articles
             </div>
             <Pagination />
           </div>
@@ -228,32 +233,32 @@ export default function KnowledgeBase() {
 
             <Field label="Title">
               <input
-                defaultValue={selected.title}
-                key={selected.id + "-title"}
+                defaultValue={selected?.title}
+                key={selected?._id + "-title"}
                 className="w-full rounded-[14px] bg-[#FAFAF6] px-3 py-2 text-[12px] font-semibold ring-1 ring-black/10 focus:outline-none focus:ring-black/25"
               />
             </Field>
 
             <Field label="Category">
-              <SelectBox defaultValue={selected.category} options={CATEGORIES.slice(1)} />
+              <SelectBox defaultValue={selected?.category} options={CATEGORIES.slice(1)} />
             </Field>
 
             <Field label="Status">
-              <SelectBox defaultValue={selected.status} options={["Published", "Draft", "Archived"]} />
+              <SelectBox defaultValue={selected?.status} options={["Published", "Draft", "Archived"]} />
             </Field>
 
             <Field label="Answer / Content">
               <textarea
-                key={selected.id + "-content"}
+                key={selected?._id + "-content"}
                 rows={5}
-                defaultValue={`You can track your order by logging into your account and going to the "My Orders" section. Click on the order you want to track and you will see real-time shipping updates.\n\nYou will also receive email updates with tracking links once your order is shipped.`}
+                defaultValue={selected?.content}
                 className="w-full resize-none rounded-[14px] bg-[#FAFAF6] px-3 py-2 text-[12px] leading-relaxed ring-1 ring-black/10 focus:outline-none focus:ring-black/25"
               />
             </Field>
 
             <Field label="Keywords / Tags">
               <div className="flex flex-wrap items-center gap-1.5">
-                {selected.tags.map((t) => (
+                {selected?.tags?.map((t) => (
                   <span
                     key={t}
                     className="inline-flex items-center gap-1 rounded-full bg-[#F1ECFF] px-2.5 py-1 text-[10px] font-bold text-[#7C5CFF]"
@@ -271,11 +276,11 @@ export default function KnowledgeBase() {
             <div className="mt-3 grid grid-cols-2 gap-2 rounded-[14px] bg-[#FAFAF6] p-3 text-[11px]">
               <div>
                 <div className="font-semibold text-black/45 uppercase tracking-wide text-[10px]">Used In Responses</div>
-                <div className="mt-1 font-bold text-black/75">{selected.used} times this month</div>
+                <div className="mt-1 font-bold text-black/75">{selected?.usedCount || 0} times this month</div>
               </div>
               <div>
                 <div className="font-semibold text-black/45 uppercase tracking-wide text-[10px]">Last Updated</div>
-                <div className="mt-1 font-bold text-black/75">{selected.updated} by Admin User</div>
+                <div className="mt-1 font-bold text-black/75">{selected?.updatedAt ? new Date(selected.updatedAt).toLocaleDateString() : ""} by Admin User</div>
               </div>
             </div>
 

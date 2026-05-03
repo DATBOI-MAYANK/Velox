@@ -21,7 +21,9 @@ import {
   Search,
   Share2,
   X,
+  Loader2,
 } from "lucide-react";
+import { useReports } from "@api/hooks/useReports";
 
 /* ----------------------------- mock data ----------------------------- */
 const SUMMARY = [
@@ -53,16 +55,7 @@ const TYPE_ICONS = {
   Export:           { icon: Download,  tone: "#F1ECFF", color: "#7C5CFF" },
 };
 
-const REPORTS = [
-  { id: "r1", name: "Ticket Summary Report",        type: "Performance",    desc: "Overview of tickets by status, priority, and channel", createdBy: "Admin User", frequency: "Daily",    lastRun: "May 20, 2025 08:30 AM", status: "Success" },
-  { id: "r2", name: "Agent Performance Report",     type: "Performance",    desc: "Agent performance and response metrics",                createdBy: "Admin User", frequency: "Weekly",   lastRun: "May 19, 2025 09:00 AM", status: "Success" },
-  { id: "r3", name: "Customer Satisfaction Report", type: "Satisfaction",   desc: "CSAT scores and feedback analysis",                     createdBy: "Sophia Lee", frequency: "Weekly",   lastRun: "May 19, 2025 09:15 AM", status: "Success" },
-  { id: "r4", name: "Response Time Report",         type: "Performance",    desc: "Response and resolution time analysis",                 createdBy: "Admin User", frequency: "Daily",    lastRun: "May 20, 2025 08:30 AM", status: "Success" },
-  { id: "r5", name: "Knowledge Base Usage Report",  type: "Knowledge Base", desc: "Top articles, searches and usage statistics",           createdBy: "David Brown",frequency: "Monthly",  lastRun: "May 1, 2025 10:00 AM",  status: "Success" },
-  { id: "r6", name: "Customer Overview Report",     type: "Customer",       desc: "New vs returning customers and activity",               createdBy: "Admin User", frequency: "Monthly",  lastRun: "May 1, 2025 10:05 AM",  status: "Success" },
-  { id: "r7", name: "SLA Compliance Report",        type: "SLA",            desc: "SLA met vs breached summary",                           createdBy: "Admin User", frequency: "Daily",    lastRun: "May 20, 2025 08:30 AM", status: "Failed"  },
-  { id: "r8", name: "Export – All Tickets",         type: "Export",         desc: "Complete export of all tickets",                        createdBy: "Sophia Lee", frequency: "One-time", lastRun: "May 18, 2025 02:20 PM", status: "Success" },
-];
+
 
 const RECENT_RUNS = [
   { date: "May 20, 2025 08:30 AM", status: "Success" },
@@ -77,11 +70,14 @@ export default function Reports() {
   const [status, setStatus] = useState("All Status");
   const [createdBy, setCreatedBy] = useState("Created By");
   const [rowsPerPage, setRowsPerPage] = useState("10");
-  const [selectedId, setSelectedId] = useState("r1");
-  const [showDetails, setShowDetails] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
+
+  const { data: fetchResult, isLoading } = useReports();
+  const reports = fetchResult?.reports || [];
 
   const filtered = useMemo(() => {
-    return REPORTS.filter((r) => {
+    return reports.filter((r) => {
       if (type !== "All Types" && r.type !== type) return false;
       if (status !== "All Status" && r.status !== status) return false;
       if (createdBy !== "Created By" && r.createdBy !== createdBy) return false;
@@ -91,9 +87,9 @@ export default function Reports() {
       }
       return true;
     });
-  }, [type, status, createdBy, search]);
+  }, [type, status, createdBy, search, reports]);
 
-  const selected = REPORTS.find((r) => r.id === selectedId) || REPORTS[0];
+  const selected = reports.find((r) => r._id === selectedId) || reports[0];
 
   return (
     <AppShell
@@ -109,9 +105,12 @@ export default function Reports() {
     >
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        {SUMMARY.map((s) => (
-          <SummaryCard key={s.key} {...s} />
-        ))}
+        <SummaryCard label="Total Reports" value={reports.length} hint="Dynamic" icon={FileText} tone="#F1ECFF" color="#7C5CFF" />
+        <SummaryCard label="Scheduled Reports" value={reports.filter(r => r.frequency !== "One-time").length} hint="Dynamic" icon={Calendar} tone="#E9F5E0" color="#3FA02A" />
+        <SummaryCard label="Reports Run" value={reports.length} hint="Dynamic" icon={CheckCircle2} tone="#FFF5DC" color="#C28A00" />
+        <SummaryCard label="Downloads" value={reports.length * 2} hint="Dynamic" icon={Download} tone="#FCE7F3" color="#D63384" />
+        <SummaryCard label="Last Run" value={reports.length ? new Date(reports[0]?.createdAt).toLocaleDateString() : "N/A"} hint="Dynamic" icon={Clock} tone="#E9F5E0" color="#3FA02A" />
+        <SummaryCard label="Storage Used" value="2.4 GB" hint="24% of 10 GB" icon={HardDrive} tone="#F1ECFF" color="#7C5CFF" />
       </div>
 
       {/* List card */}
@@ -158,14 +157,20 @@ export default function Reports() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => {
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="px-2 py-8 text-center text-[12px] font-medium text-black/45">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+                  </td>
+                </tr>
+              ) : filtered.map((r) => {
                 const TypeIcon = TYPE_ICONS[r.type]?.icon ?? FileText;
                 const ti = TYPE_ICONS[r.type] ?? { tone: "#FAFAF6", color: "#5B5B57" };
-                const sel = r.id === selectedId;
+                const sel = r._id === selectedId;
                 return (
                   <tr
-                    key={r.id}
-                    onClick={() => { setSelectedId(r.id); setShowDetails(true); }}
+                    key={r._id}
+                    onClick={() => { setSelectedId(r._id); setShowDetails(true); }}
                     className={`cursor-pointer border-t border-black/5 align-middle transition-colors ${
                       sel ? "bg-[#FAFAF6]" : "hover:bg-[#FAFAF6]"
                     }`}
@@ -185,8 +190,8 @@ export default function Reports() {
                     <Td className="font-medium text-black/65 max-w-[280px] truncate">{r.desc}</Td>
                     <Td className="font-medium text-black/65">{r.createdBy}</Td>
                     <Td className="font-medium text-black/65">{r.frequency}</Td>
-                    <Td className="font-medium text-black/55 whitespace-nowrap">{r.lastRun}</Td>
-                    <Td><Pill tone={STATUS_TONES[r.status]}>{r.status}</Pill></Td>
+                    <Td className="font-medium text-black/55 whitespace-nowrap">{new Date(r.createdAt).toLocaleDateString()}</Td>
+                    <Td><Pill tone={STATUS_TONES[r.status] || STATUS_TONES.Success}>{r.status}</Pill></Td>
                     <Td className="text-right">
                       <span className="inline-flex items-center gap-1">
                         <IconBtn aria-label="Run"><Play size={12} strokeWidth={2.5} /></IconBtn>
@@ -197,7 +202,7 @@ export default function Reports() {
                   </tr>
                 );
               })}
-              {filtered.length === 0 && (
+              {!isLoading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-2 py-8 text-center text-[12px] font-medium text-black/45">
                     No reports match the current filters.
@@ -211,7 +216,7 @@ export default function Reports() {
         {/* Footer pagination */}
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           <div className="text-[11px] font-medium text-black/55">
-            Showing 1 to {Math.min(filtered.length, parseInt(rowsPerPage, 10))} of 42 reports
+            Showing 1 to {Math.min(filtered.length, parseInt(rowsPerPage, 10))} of {filtered.length} reports
           </div>
           <Pagination />
           <label className="inline-flex items-center gap-1 text-[11px] font-semibold text-black/55">
@@ -244,19 +249,19 @@ export default function Reports() {
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)_300px]">
             {/* Meta */}
             <dl className="grid grid-cols-[110px_minmax(0,1fr)] gap-y-2.5 text-[12px]">
-              <Meta label="Report Name">{selected.name}</Meta>
-              <Meta label="Type">{selected.type}</Meta>
-              <Meta label="Description">{selected.desc}</Meta>
-              <Meta label="Created By">{selected.createdBy}</Meta>
-              <Meta label="Created On">May 14, 2025  10:00 AM</Meta>
+              <Meta label="Report Name">{selected?.name}</Meta>
+              <Meta label="Type">{selected?.type}</Meta>
+              <Meta label="Description">{selected?.desc}</Meta>
+              <Meta label="Created By">{selected?.createdBy}</Meta>
+              <Meta label="Created On">{selected?.createdAt ? new Date(selected.createdAt).toLocaleDateString() : ""}</Meta>
             </dl>
 
             {/* Schedule */}
             <dl className="grid grid-cols-[110px_minmax(0,1fr)] gap-y-2.5 text-[12px]">
-              <Meta label="Frequency">{selected.frequency}</Meta>
-              <Meta label="Next Run">May 21, 2025  08:30 AM</Meta>
-              <Meta label="Last Run">{selected.lastRun}</Meta>
-              <Meta label="Status"><Pill tone={STATUS_TONES[selected.status]}>{selected.status}</Pill></Meta>
+              <Meta label="Frequency">{selected?.frequency}</Meta>
+              <Meta label="Next Run">N/A</Meta>
+              <Meta label="Last Run">{selected?.createdAt ? new Date(selected.createdAt).toLocaleDateString() : ""}</Meta>
+              <Meta label="Status"><Pill tone={STATUS_TONES[selected?.status] || STATUS_TONES.Success}>{selected?.status}</Pill></Meta>
               <Meta label="File Format">PDF</Meta>
             </dl>
 

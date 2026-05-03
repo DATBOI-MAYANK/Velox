@@ -34,36 +34,28 @@ import {
   Zap,
 } from "lucide-react";
 
-/* ----------------------------- mock data ----------------------------- */
+/* ----------------------------- initialization state ----------------------------- */
+const defaultConvoId = 1;
 const initialConversations = [
-  { id: 1, title: "Order Status",  preview: "Sure! I can help you with that.", time: "10:30 AM", Icon: Package,  iconColor: "#3FA02A", tone: "#E9F5E0" },
-  { id: 2, title: "Refund Help",   preview: "Let me check that for you.",      time: "Yesterday", Icon: Receipt,  iconColor: "#7C5CFF", tone: "#F1ECFF" },
-  { id: 3, title: "Account Setup", preview: "Here's your refund status.",      time: "May 19",    Icon: Settings, iconColor: "#C28A00", tone: "#FFF5DC" },
-  { id: 4, title: "Tech Support",  preview: "Connected with agent.",           time: "May 18",    Icon: Wrench,   iconColor: "#D63384", tone: "#FCE7F3" },
-];
-
-const orderStatusMessages = [
-  { id: 1, from: "user", text: "Hello! I need help with my order.",                                             time: "10:28 AM" },
-  { id: 2, from: "bot",  text: "Hello! How can I help you today?",                                              time: "10:28 AM" },
-  { id: 3, from: "user", text: "I haven't received my order yet. Can you check the status?",                    time: "10:29 AM" },
-  { id: 4, from: "bot",  text: "Sure! I can help you with that.\nCan you please provide your order ID?",        time: "10:29 AM" },
-  { id: 5, from: "user", text: "Yes, my order ID is #12345.",                                                   time: "10:30 AM" },
-  { id: 6, from: "bot",  text: "Thanks! Let me check the status for you.",                                      time: "10:30 AM" },
+  {
+    id: defaultConvoId,
+    title: "New Conversation",
+    preview: "Start typing\u2026",
+    time: "Just now",
+    Icon: Sparkles,
+    iconColor: "#7C5CFF",
+    tone: "#F1ECFF",
+  },
 ];
 
 const initialThreads = {
-  1: orderStatusMessages,
-  2: [
-    { id: 21, from: "user", text: "Hi, I'd like to request a refund.", time: "Yesterday" },
-    { id: 22, from: "bot",  text: "Let me check that for you. Could you share the order ID?", time: "Yesterday" },
-  ],
-  3: [
-    { id: 31, from: "user", text: "Can you help me set up my account?", time: "May 19" },
-    { id: 32, from: "bot",  text: "Of course! Here's your refund status. Anything else?", time: "May 19" },
-  ],
-  4: [
-    { id: 41, from: "user", text: "My app keeps crashing.",  time: "May 18" },
-    { id: 42, from: "bot",  text: "Connected with agent. They'll be with you shortly.", time: "May 18" },
+  [defaultConvoId]: [
+    {
+      id: 2,
+      from: "bot",
+      text: "Hi! How can I help you today?",
+      time: "Just now",
+    },
   ],
 };
 
@@ -255,7 +247,7 @@ export default function Chat() {
       setSending(true);
       try {
         if (!ticketId) {
-          // First message — create the ticket; AI auto-reply (if any) is in `messages`
+          // First message - create the ticket; AI auto-reply (if any) is in `messages`
           const res = await widget.createTicket({
             apiKey: WIDGET_API_KEY,
             content: text,
@@ -281,7 +273,7 @@ export default function Chat() {
               );
           }
         } else {
-          // Subsequent messages — push over socket; agent/AI replies arrive via the listener
+          // Subsequent messages - push over socket; agent/AI replies arrive via the listener
           const sock = getWidgetSocket({
             apiKey: WIDGET_API_KEY,
             sessionToken: `sess_${ticketId}`,
@@ -682,7 +674,7 @@ export default function Chat() {
           {/* input bar */}
           <form onSubmit={send} className="border-t border-black/5 p-2 sm:p-4">
             <div className="flex items-center gap-1.5 rounded-full bg-[#F4F4EE] px-2 py-1.5 sm:gap-2 sm:px-3 sm:py-2">
-              {/* mode switcher (text / photo / voice) — hidden on small */}
+              {/* mode switcher (text / photo / voice) - hidden on small */}
               <div className="hidden items-center gap-1 rounded-full bg-white p-1 shadow-[0_2px_8px_rgba(0,0,0,0.04)] sm:flex">
                 {[
                   { key: "text",  Icon: Pencil },
@@ -743,7 +735,7 @@ export default function Chat() {
             </div>
           </form>
 
-          {/* compact flow strip + AI confidence + agent button — bottom of chat panel */}
+          {/* compact flow strip + AI confidence + agent button - bottom of chat panel */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-black/5 px-3 py-2 sm:px-4 sm:py-2.5">
             {/* AI confidence chip */}
             <div className="inline-flex min-w-0 items-center gap-2 rounded-full px-3 py-1" style={{ background: "#F1ECFF" }} title="Intent: Order Status Inquiry">

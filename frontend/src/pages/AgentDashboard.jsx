@@ -36,6 +36,7 @@ import {
   Sparkles,
   Tag,
   UserPlus,
+  Loader2,
 } from "lucide-react";
 
 /* ----------------------------- ui constants ----------------------------- */
@@ -144,10 +145,10 @@ export default function AgentDashboard() {
     allTickets.find((t) => t.id === activeTicket) ??
     allTickets[0] ?? {
       id: null,
-      code: "—",
+      code: "-",
       status: "Open",
       tone: "#E9F5E0",
-      initials: "—",
+      initials: "-",
       name: "No tickets yet",
       email: "",
       subject: "Waiting for the first ticket",
@@ -189,9 +190,11 @@ export default function AgentDashboard() {
     };
 
     sock.on(SOCKET_EVENTS.CHAT_MESSAGE, onMessage);
+    sock.on(SOCKET_EVENTS.TICKET_NEW, onTicketUpdated);
     sock.on(SOCKET_EVENTS.TICKET_UPDATED, onTicketUpdated);
     return () => {
       sock.off?.(SOCKET_EVENTS.CHAT_MESSAGE, onMessage);
+      sock.off?.(SOCKET_EVENTS.TICKET_NEW, onTicketUpdated);
       sock.off?.(SOCKET_EVENTS.TICKET_UPDATED, onTicketUpdated);
       socketActions.leaveTicket(ticket.id);
     };
@@ -335,7 +338,12 @@ export default function AgentDashboard() {
                 </li>
               );
             })}
-            {filtered.length === 0 && (
+            {ticketsQuery.isLoading && (
+              <li className="rounded-[18px] p-6 text-center text-black/50">
+                <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+              </li>
+            )}
+            {!ticketsQuery.isLoading && filtered.length === 0 && (
               <li className="rounded-[18px] bg-[#FAFAF6] p-6 text-center text-[12px] font-medium text-black/55">
                 No tickets match your filters.
               </li>
@@ -415,7 +423,7 @@ export default function AgentDashboard() {
             </span>
             <span className="inline-flex items-center gap-1.5">
               <Clock size={12} strokeWidth={2.5} className="text-black/45" />
-              {ticket.time || "—"}
+              {ticket.time || "-"}
             </span>
           </div>
 
@@ -445,12 +453,17 @@ export default function AgentDashboard() {
                 {summary}
               </div>
             )}
+            {historyQuery.isLoading && isRealTicket && (
+              <div className="flex justify-center p-4">
+                <Loader2 className="h-5 w-5 animate-spin text-black/45" />
+              </div>
+            )}
             {messages.length === 0 && !historyQuery.isLoading && isRealTicket && (
-              <div className="py-12 text-center text-[12px] font-medium text-black/45">No messages yet — say hi.</div>
+              <div className="py-12 text-center text-[12px] font-medium text-black/45">No messages yet - say hi.</div>
             )}
             {!isRealTicket && (
               <div className="py-12 text-center text-[12px] font-medium text-black/45">
-                {ticket.id ? "Live escalation preview — connect this lead to a real ticket from your backend." : "No ticket selected."}
+                {ticket.id ? "Live escalation preview - connect this lead to a real ticket from your backend." : "No ticket selected."}
               </div>
             )}
             {messages.map((m) =>

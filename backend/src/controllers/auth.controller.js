@@ -48,7 +48,6 @@ export const register = async (req, res) => {
 
   const session = await mongoose.startSession();
   session.startTransaction();
-
   try {
     // Slug is derived from the business name - timestamp suffix keeps it unique
     const slug = `${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
@@ -64,7 +63,6 @@ export const register = async (req, res) => {
     }], { session });
 
     await session.commitTransaction();
-    session.endSession();
 
     const { accessToken, refreshToken } = tokenPair({
       userId:   user._id,
@@ -86,8 +84,9 @@ export const register = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
     throw error;
+  } finally {
+    session.endSession();
   }
 };
 

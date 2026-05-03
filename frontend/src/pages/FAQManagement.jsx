@@ -20,6 +20,7 @@ import {
   ThumbsUp,
   Trash2,
   X,
+  Loader2,
 } from "lucide-react";
 
 /* ----------------------------- mock data ----------------------------- */
@@ -40,16 +41,7 @@ const STATUS_TONES = {
   Hidden:    { bg: "#EDEDEA", color: "#5B5B57" },
 };
 
-const FAQS = [
-  { id: "f1", q: "How do I reset my password?",       category: "Account & Security", language: "English", status: "Published", updated: "May 20, 2025 09:15 AM", views: 1842, votes: 256 },
-  { id: "f2", q: "How can I track my ticket?",        category: "Tickets",            language: "English", status: "Published", updated: "May 19, 2025 02:30 PM", views: 2354, votes: 312 },
-  { id: "f3", q: "How do I change my email address?", category: "Account & Security", language: "English", status: "Published", updated: "May 18, 2025 11:05 AM", views: 1103, votes: 187 },
-  { id: "f4", q: "What are your support hours?",      category: "General",            language: "English", status: "Published", updated: "May 17, 2025 10:20 AM", views:  876, votes:  98 },
-  { id: "f5", q: "How do I upload an attachment?",    category: "Tickets",            language: "English", status: "Draft",     updated: "May 16, 2025 04:45 PM", views: null, votes: null },
-  { id: "f6", q: "How do I upgrade my plan?",         category: "Billing & Payments", language: "English", status: "Published", updated: "May 15, 2025 03:10 PM", views: 1654, votes: 241 },
-  { id: "f7", q: "Can I cancel my subscription?",     category: "Billing & Payments", language: "English", status: "Published", updated: "May 14, 2025 09:40 AM", views: 1223, votes: 176 },
-  { id: "f8", q: "How do I integrate with Slack?",    category: "Integrations",       language: "English", status: "Hidden",    updated: "May 13, 2025 01:20 PM", views:  312, votes:  42 },
-];
+
 
 /* ============================== page ============================== */
 function adaptFaq(f) {
@@ -64,7 +56,7 @@ function adaptFaq(f) {
       ? new Date(f.updatedAt).toLocaleString()
       : f.createdAt
       ? new Date(f.createdAt).toLocaleString()
-      : "—",
+      : "-",
     views:    f.views ?? null,
     votes:    f.helpfulCount ?? null,
     raw:      f,
@@ -72,7 +64,7 @@ function adaptFaq(f) {
 }
 
 export default function FAQManagement() {
-  const { data: faqData } = useFaq();
+  const { data: faqData, isLoading } = useFaq();
   const upsert = useUpsertFaq();
   const remove = useRemoveFaq();
 
@@ -106,7 +98,7 @@ export default function FAQManagement() {
     allFaqs.find((f) => f.id === selectedId) ||
     allFaqs[0] || {
       id: null, q: "No FAQs yet", answer: "Click \"New FAQ\" to add your first knowledge base entry.",
-      category: "—", language: "English", status: "Published", updated: "—", views: null, votes: null,
+      category: "-", language: "English", status: "Published", updated: "-", views: null, votes: null,
     };
 
   const handleNew = async () => {
@@ -214,7 +206,13 @@ export default function FAQManagement() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((f) => {
+              {isLoading ? (
+                <tr>
+                  <td colSpan={9} className="px-2 py-8 text-center text-[12px] font-medium text-black/45">
+                    <Loader2 className="mx-auto h-5 w-5 animate-spin" />
+                  </td>
+                </tr>
+              ) : filtered.map((f) => {
                 const sel = f.id === selectedId;
                 return (
                   <tr
@@ -230,14 +228,14 @@ export default function FAQManagement() {
                     <Td className="font-medium text-black/65">{f.language}</Td>
                     <Td><Pill tone={STATUS_TONES[f.status]}>{f.status}</Pill></Td>
                     <Td className="font-medium text-black/55 whitespace-nowrap">{f.updated}</Td>
-                    <Td className="text-right font-semibold text-black/70">{f.views ?? "—"}</Td>
+                    <Td className="text-right font-semibold text-black/70">{f.views ?? "-"}</Td>
                     <Td className="text-right">
                       {f.votes != null ? (
                         <span className="inline-flex items-center gap-1 font-semibold text-black/70">
                           <ThumbsUp size={11} strokeWidth={2.5} className="text-[#3FA02A]" /> {f.votes}
                         </span>
                       ) : (
-                        <span className="text-black/40">—</span>
+                        <span className="text-black/40">-</span>
                       )}
                     </Td>
                     <Td className="text-right">
@@ -250,7 +248,7 @@ export default function FAQManagement() {
                   </tr>
                 );
               })}
-              {filtered.length === 0 && (
+              {!isLoading && filtered.length === 0 && (
                 <tr>
                   <td colSpan={9} className="px-2 py-8 text-center text-[12px] font-medium text-black/45">
                     No FAQs match the current filters.
@@ -305,7 +303,7 @@ export default function FAQManagement() {
               <Meta label="Created By">Sophia Lee</Meta>
               <Meta label="Created On">Apr 25, 2025 10:00 AM</Meta>
               <Meta label="Last Updated">{selected.updated}</Meta>
-              <Meta label="Views">{selected.views ?? "—"}</Meta>
+              <Meta label="Views">{selected.views ?? "-"}</Meta>
               <Meta label="Helpful Votes">
                 <span className="inline-flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 text-[#3FA02A]"><ThumbsUp size={11} strokeWidth={2.5} /> {selected.votes ?? 0}</span>
