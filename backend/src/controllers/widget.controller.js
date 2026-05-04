@@ -3,6 +3,7 @@ import Ticket from "../models/Ticket.js";
 import Message from "../models/Message.js";
 import { getIO } from "../socket/index.js";
 import crypto from "crypto";
+import { processIncomingCustomerMessage } from "../services/conversation.service.js";
 
 /**
  * GET /api/widget/config/:apiKey
@@ -94,6 +95,24 @@ export const createTicket = async (req, res) => {
   });
   await initialMessage.save();
 
+  const responseMessages = [initialMessage];
+
+  try {
+    const pipelineResult = await processIncomingCustomerMessage({
+      tenantId: tenant._id,
+      ticketId: ticket._id,
+      body: ticketBody,
+      ticket,
+      category: ticket.category,
+      priority: ticket.priority,
+    });
+
+    responseMessages.push(...pipelineResult.aiMessages);
+    Object.assign(ticket, pipelineResult.updates);
+  } catch (err) {
+    console.warn("Widget AI pipeline error (non-fatal):", err.message);
+  }
+
   if (transcript && transcript.length > 0) {
     const transcriptText = transcript.map(t => `[${t.sender}]: ${t.text}`).join('\n');
     const note = new Message({
@@ -111,5 +130,5 @@ export const createTicket = async (req, res) => {
     io.to(`tenant:${tenant._id}`).emit("ticket:new", { ticket });
   } catch { /* Socket not initialised yet */ }
 
-  res.status(201).json({ success: true, ticket });
+  res.status(201).json({ success: true, ticket, messages: responseMessages });
 };

@@ -11,9 +11,12 @@ import { STORAGE_KEYS } from "@lib/constants";
  * VITE_API_URL should be the backend ORIGIN only (e.g. "http://localhost:5000").
  * The "/api" suffix is appended here so endpoints stay clean (`/auth/login`).
  */
-const API_ORIGIN =
-  import.meta.env.VITE_API_URL?.replace(/\/+$/, "") || "http://localhost:5000";
-const API_BASE = `${API_ORIGIN}/api`;
+const configuredApiOrigin = import.meta.env.VITE_API_URL?.replace(/\/+$/, "");
+const useDevProxy =
+  import.meta.env.DEV && (!configuredApiOrigin || /(^|:\/\/)(localhost|127\.0\.0\.1)(:\d+)?$/.test(configuredApiOrigin));
+const API_BASE = useDevProxy
+  ? "/api"
+  : `${configuredApiOrigin || "http://localhost:5000"}/api`;
 
 export const apiClient = axios.create({
   baseURL: API_BASE,

@@ -263,6 +263,37 @@ export const handlers = [
     await lag();
     return HttpResponse.json(db.analytics.overview);
   }),
+  http.get(`${API}/analytics/trends`, async () => {
+    await lag();
+    return HttpResponse.json({
+      trends: db.analytics.ticketsTrend.map((point, index) => ({
+        date: new Date(Date.now() - (db.analytics.ticketsTrend.length - index - 1) * 86400000).toISOString(),
+        count: point.value,
+      })),
+    });
+  }),
+  http.get(`${API}/analytics/agents`, async () => {
+    await lag();
+    return HttpResponse.json({
+      agents: db.analytics.agentPerformance.map((agent) => ({
+        name: agent.name,
+        email: `${agent.name.toLowerCase().replace(/\s+/g, ".")}@velox.io`,
+        resolved: agent.resolved,
+        total: agent.resolved + 12,
+        csat: agent.csat,
+        avgResponse: agent.avgResponse,
+      })),
+    });
+  }),
+  http.get(`${API}/analytics/categories`, async () => {
+    await lag();
+    return HttpResponse.json({
+      categories: db.analytics.channels.map((channel) => ({
+        category: channel.channel,
+        count: channel.value,
+      })),
+    });
+  }),
   http.get(`${API}/analytics/tickets-trend`, async () => {
     await lag();
     return HttpResponse.json(db.analytics.ticketsTrend);

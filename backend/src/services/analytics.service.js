@@ -105,7 +105,7 @@ export async function getAgentStats(tenantId, from, to) {
 
   const dateFilter = buildDateFilter(from, to);
 
-  const agents = await User.find({ tenantId, role: { $in: ["admin", "agent"] }, isActive: true })
+  const agents = await User.find({ tenantId, role: "agent", isActive: true })
     .select("name email")
     .lean();
 

@@ -24,10 +24,16 @@ import { mockSocket } from "./mockSocket";
  *   chat:typing      { ticketId }
  *   agent:status     { status: "online" | "away" }
  */
-const SOCKET_URL =
-  import.meta.env.VITE_SOCKET_URL ||
-  import.meta.env.VITE_API_URL?.replace(/\/+$/, "") ||
-  "http://localhost:5000";
+const configuredSocketUrl = import.meta.env.VITE_SOCKET_URL?.replace(/\/+$/, "");
+const configuredApiUrl = import.meta.env.VITE_API_URL?.replace(/\/+$/, "");
+const useDevProxy =
+  import.meta.env.DEV &&
+  (!configuredSocketUrl || /(^|:\/\/)(localhost|127\.0\.0\.1)(:\d+)?$/.test(configuredSocketUrl)) &&
+  (!configuredApiUrl || /(^|:\/\/)(localhost|127\.0\.0\.1)(:\d+)?$/.test(configuredApiUrl));
+
+const SOCKET_URL = useDevProxy
+  ? ""
+  : configuredSocketUrl || configuredApiUrl || "http://localhost:5000";
 
 const USE_MOCK =
   import.meta.env.VITE_USE_MOCK !== "false" && import.meta.env.DEV;
