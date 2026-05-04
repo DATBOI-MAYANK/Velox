@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import Tenant from "../models/Tenant.js";
 import User from "../models/User.js";
 import redis from "../config/redis.js";
@@ -46,23 +45,21 @@ export const register = async (req, res) => {
   if (password.length < 8)
     return res.status(400).json({ success: false, message: "Password must be at least 8 characters" });
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  let tenant = null;
+  let user = null;
   try {
     // Slug is derived from the business name - timestamp suffix keeps it unique
     const slug = `${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`;
-    const [tenant] = await Tenant.create([{ name: businessName, slug }], { session });
+    tenant = await Tenant.create({ name: businessName, slug });
 
     // passwordHash field runs through bcrypt in the User pre-save hook
-    const [user] = await User.create([{
+    user = await User.create({
       tenantId:     tenant._id,
       name,
       email,
       passwordHash: password,
       role:         "admin",
-    }], { session });
-
-    await session.commitTransaction();
+    });
 
     const { accessToken, refreshToken } = tokenPair({
       userId:   user._id,
@@ -83,10 +80,10 @@ export const register = async (req, res) => {
       },
     });
   } catch (error) {
-    await session.abortTransaction();
+    if (tenant?._id && !user) {
+      await Tenant.findByIdAndDelete(tenant._id).catch(() => {});
+    }
     throw error;
-  } finally {
-    session.endSession();
   }
 };
 

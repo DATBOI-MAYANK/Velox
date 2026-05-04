@@ -1,6 +1,7 @@
 import Message from "../models/Message.js";
 import Ticket from "../models/Ticket.js";
 import { getIO } from "../socket/index.js";
+import { processIncomingCustomerMessage } from "../services/conversation.service.js";
 
 /**
  * POST /api/chat/:ticketId/messages
@@ -36,6 +37,31 @@ export const sendMessage = async (req, res) => {
     const io = getIO();
     io.to(`ticket:${ticketId}`).emit("chat:message", { message });
   } catch { /* Socket not ready */ }
+
+  if (senderType === "customer") {
+    try {
+      const pipelineResult = await processIncomingCustomerMessage({
+        tenantId: req.tenant,
+        ticketId,
+        body: content,
+        ticket,
+        category: ticket.category,
+        priority: ticket.priority,
+      });
+
+      try {
+        const io = getIO();
+        for (const aiMessage of pipelineResult.aiMessages) {
+          io.to(`ticket:${ticketId}`).emit("chat:message", { message: aiMessage });
+        }
+        io.to(`tenant:${req.tenant}`).emit("ticket:updated", {
+          ticket: { ...ticket.toObject(), ...pipelineResult.updates },
+        });
+      } catch { /* Socket not ready */ }
+    } catch (err) {
+      console.warn("Chat AI pipeline error (non-fatal):", err.message);
+    }
+  }
 
   res.status(201).json({ success: true, message });
 };

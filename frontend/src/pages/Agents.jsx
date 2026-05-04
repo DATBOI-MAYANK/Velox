@@ -35,7 +35,7 @@ const SUMMARY = [
   { key: "roles",   label: "Roles",          value: "5",  hint: "Admin, Agent, etc.", icon: Shield,    tone: "#FFF5DC", color: "#C28A00" },
 ];
 
-const ROLES   = ["All Roles", "Admin", "Agent", "Supervisor", "Trainee"];
+const ROLES   = ["All Roles", "Agent", "Supervisor", "Trainee"];
 const STATUSES = ["All Status", "Online", "Offline", "On Break", "Deactivated"];
 const SORTS   = ["Sort: Newest", "Sort: Oldest", "Sort: Name A–Z", "Sort: Name Z–A"];
 
@@ -96,7 +96,9 @@ export default function Agents() {
 
   const allAgents = useMemo(() => {
     const list = agentsData?.users || agentsData?.data || agentsData || [];
-    return Array.isArray(list) ? list.map(adaptAgent) : [];
+    return Array.isArray(list)
+      ? list.map(adaptAgent).filter((agent) => agent.raw?.role === "agent" || agent.raw?.role === "viewer")
+      : [];
   }, [agentsData]);
 
   const [search, setSearch] = useState("");

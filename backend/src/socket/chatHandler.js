@@ -1,5 +1,6 @@
 import Message from "../models/Message.js";
 import Ticket from "../models/Ticket.js";
+import { processIncomingCustomerMessage } from "../services/conversation.service.js";
 
 /**
  * Per-socket rate limiting for chat events.
@@ -50,20 +51,51 @@ export function registerChatHandlers(io, socket) {
 
     try {
       const tenantId = socket.user.tenantId;
+      const messageSenderType = senderType || (socket.user.type === "agent" ? "agent" : "customer");
+      const ticket = await Ticket.findOne({ _id: ticketId, tenantId });
+
+      if (!ticket) {
+        return socket.emit("error", { message: "Ticket not found" });
+      }
 
       const message = await Message.create({
         tenantId,
         ticketId,
-        senderType: senderType || (socket.user.type === "agent" ? "agent" : "customer"),
+        senderType: messageSenderType,
         senderId:   socket.user.type === "agent" ? socket.user.userId : null,
         content:    content.trim(),
       });
 
       // Update ticket timestamps
-      await Ticket.findByIdAndUpdate(ticketId, { lastMessageAt: new Date() });
+      ticket.lastMessageAt = new Date();
+      await ticket.save();
 
       // Broadcast to everyone in the ticket room
       io.to(`ticket:${ticketId}`).emit("chat:message", { message });
+
+      if (messageSenderType === "customer") {
+        try {
+          const pipelineResult = await processIncomingCustomerMessage({
+            tenantId,
+            ticketId,
+            body: content,
+            ticket,
+            category: ticket?.category,
+            priority: ticket?.priority,
+          });
+
+          for (const aiMessage of pipelineResult.aiMessages) {
+            io.to(`ticket:${ticketId}`).emit("chat:message", { message: aiMessage });
+          }
+          if (ticket) {
+            io.to(`tenant:${tenantId}`).emit("ticket:updated", {
+              ticket: { ...ticket.toObject(), ...pipelineResult.updates },
+            });
+          }
+        } catch (err) {
+          socket.emit("error", { message: `AI pipeline failed: ${err.message}` });
+        }
+      }
     } catch (err) {
       socket.emit("error", { message: `Send failed: ${err.message}` });
     }

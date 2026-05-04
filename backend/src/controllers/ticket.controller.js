@@ -78,12 +78,12 @@ export const createTicket = async (req, res) => {
           senderType: "ai",
           content:    aiResult.reply,
         });
-        updates.aiReplied = true;
+        updates.autoReplied = true;
       }
     }
 
     // Step 3: Route to an agent if not auto-resolved
-    if (!updates.aiReplied) {
+    if (!updates.autoReplied) {
       const agent = await routeTicket(req.tenant, classification.intent);
       if (agent) updates.assignedTo = agent._id;
       updates.status = "open";
